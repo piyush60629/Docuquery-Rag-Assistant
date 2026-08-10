@@ -102,10 +102,6 @@ Use only public, synthetic, or non-confidential documents. Uploaded content and 
 - Built and deployed a document-based RAG application that extracts and chunks uploaded files, creates embeddings, and retrieves relevant passages using cosine similarity.
 - Generated answers only from retrieved document content and displayed supporting source passages to improve transparency.
 
-## Interview explanation
-
-> I built this as a self-learning portfolio project, not as part of my Coforge production work. The application extracts text from uploaded documents, divides it into overlapping chunks, and creates an embedding for every chunk. When a user asks a question, it creates a question embedding and uses cosine similarity to retrieve the most relevant chunks. Only those chunks are sent to Gemini with instructions to answer from the provided context. The application also displays the retrieved passages so the user can verify the answer.
-
 ## Limitations and next improvements
 
 - The index is stored in memory and resets when the session ends.
