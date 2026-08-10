@@ -1,0 +1,25 @@
+Retail Analytics Pipeline Runbook
+
+Overview
+The retail analytics pipeline processes daily customer, product, store, inventory, and sales data. Source files arrive in the landing area every day before 2:00 AM. Azure Data Factory starts the ingestion workflow at 2:15 AM.
+
+Bronze Layer
+The Bronze layer stores the source data in its original form. Each record receives an ingestion timestamp, source file name, and batch identifier. Files with an unexpected schema are moved to a quarantine folder for review.
+
+Silver Layer
+The Silver layer applies data type corrections, duplicate removal, null checks, and business-rule validation. Sales records must contain a valid transaction identifier, product identifier, store identifier, quantity, and transaction date. Invalid records are written to an error table with the rejection reason.
+
+Incremental Load
+The pipeline uses the source update timestamp and the previous successful watermark to identify new or changed records. The watermark is updated only after the complete batch succeeds. If the pipeline fails, the previous watermark remains unchanged so the same data can be processed safely during the next run.
+
+Gold Layer
+The Gold layer creates fact and dimension tables for business reporting. The main fact table stores sales quantity, gross amount, discount amount, and net sales amount. Dimensions include customer, product, store, and date.
+
+Data Quality Checks
+The pipeline checks duplicate transaction identifiers, missing mandatory values, negative quantities, invalid product references, invalid store references, and mismatches between gross amount, discount, and net amount. Row counts are compared between pipeline stages to detect unexpected data loss.
+
+Failure Handling
+When an activity fails, Azure Data Factory records the pipeline name, activity name, batch identifier, error message, and failure time. The support engineer reviews the failed step, validates the source file and connection, fixes the issue in the development environment, and reruns the failed batch after approval.
+
+Deployment
+Changes are developed and tested in the development environment. QA validates expected row counts and business rules. Approved changes are committed to Git, reviewed, and deployed through Azure DevOps. Post-deployment validation confirms that the scheduled pipeline completed and produced the expected output.
