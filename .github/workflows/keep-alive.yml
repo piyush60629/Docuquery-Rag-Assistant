@@ -1,18 +1,49 @@
 name: Keep Streamlit App Awake
- 
+
 on:
   schedule:
-    # Runs every 10 hours (well within the 12-hour sleep window)
-    - cron: '0 */10 * * *'
-  workflow_dispatch:  # lets you trigger it manually from the Actions tab to test
- 
+    - cron: '0 */6 * * *'   # every 6 hours — safely inside the 12h sleep window
+  workflow_dispatch:         # lets you trigger it manually from the Actions tab
+
 jobs:
-  ping:
+  wake-app:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Streamlit app
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Playwright
         run: |
-          curl -sL -o /dev/null -w "HTTP Status: %{http_code}\n" \
-            --max-time 30 \
-            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-            https://piyush-docuquery.streamlit.app/
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Visit app and click wake button if asleep
+        run: |
+          python - <<'EOF'
+          from playwright.sync_api import sync_playwright
+
+          APP_URL = "https://piyush-docuquery.streamlit.app/"
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              page = browser.new_page()
+              page.goto(APP_URL, timeout=60000)
+              page.wait_for_timeout(5000)
+
+              try:
+                  wake_button = page.get_by_text("get this app back up", exact=False)
+                  if wake_button.is_visible(timeout=3000):
+                      print("App is asleep — clicking wake button...")
+                      wake_button.click()
+                      page.wait_for_timeout(15000)
+                  else:
+                      print("App is already awake.")
+              except Exception:
+                  print("No wake button found — app is likely already awake.")
+
+              page.wait_for_timeout(5000)
+              browser.close()
+              print("Done.")
+          EOF
