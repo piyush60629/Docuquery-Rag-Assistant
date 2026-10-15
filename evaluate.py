@@ -47,27 +47,56 @@ from rag_eval import (
     render_markdown,
 )
 
-RETRYABLE_MARKERS = ("429", "resource_exhausted", "quota", "rate limit", "503", "unavailable", "deadline")
+RETRYABLE_MARKERS = ("429", "resource_exhausted", "quota", "rate limit", "503", "unavailable", "deadline", "timeout", "timed out")
+# A daily quota will not reset within this run, so waiting and retrying only wastes time.
+DAILY_QUOTA_MARKERS = ("perday", "per_day", "per day", "daily")
+MAX_CONSECUTIVE_ERRORS = 3
 HISTORY_FIELDS = [
     "timestamp", "label", "mode", "chunk_size", "overlap", "top_k", "chunks", "cases", "errors",
     "hit_at_1", "hit_at_k", "mrr", "faithfulness", "answer_correctness", "refusal_accuracy", "false_refusal_rate",
 ]
 
 
+def is_daily_quota_error(message: str) -> bool:
+    lowered = message.lower().replace(" ", "")
+    return any(marker.replace(" ", "") in lowered for marker in DAILY_QUOTA_MARKERS) and (
+        "quota" in lowered or "resource_exhausted" in lowered or "429" in lowered
+    )
+
+
+def explain_error(message: str) -> str:
+    """Turn a provider error into a plain-English hint."""
+
+    lowered = message.lower()
+    if is_daily_quota_error(message):
+        return "The Gemini free-tier daily quota is used up. Try again tomorrow, or run --mode retrieval (far fewer calls)."
+    if "429" in lowered or "resource_exhausted" in lowered or "rate limit" in lowered:
+        return "Gemini is rate limiting requests. Run again with a larger --delay, or use --mode retrieval."
+    if "api key not valid" in lowered or "api_key_invalid" in lowered or "permission" in lowered or "401" in lowered or "403" in lowered:
+        return "The Gemini API key was rejected. Check the GEMINI_API_KEY secret."
+    if "not found" in lowered or "404" in lowered:
+        return "A Gemini model name was not found. Check the model names in rag_engine.py."
+    return "Unexpected error; see the message above."
+
+
 def with_retries(
     fn: Callable[[], Any],
-    attempts: int = 5,
-    base_delay: float = 15.0,
+    attempts: int = 4,
+    base_delay: float = 10.0,
     sleep: Callable[[float], None] = time.sleep,
 ) -> Any:
-    """Retry rate-limit / temporary errors with exponential backoff (free tier friendly)."""
+    """Retry short-lived rate-limit / temporary errors with exponential backoff (10s, 20s, 40s).
+
+    Daily-quota errors are raised immediately because waiting will not help.
+    """
 
     for attempt in range(1, attempts + 1):
         try:
             return fn()
         except Exception as exc:  # noqa: BLE001 - provider SDKs raise many error types
-            message = str(exc).lower()
-            if attempt == attempts or not any(marker in message for marker in RETRYABLE_MARKERS):
+            message = str(exc)
+            retryable = any(marker in message.lower() for marker in RETRYABLE_MARKERS)
+            if attempt == attempts or not retryable or is_daily_quota_error(message):
                 raise
             sleep(base_delay * (2 ** (attempt - 1)))
     raise RuntimeError("unreachable")
@@ -94,7 +123,10 @@ def run_evaluation(
     delay: float = 0.0,
     sleep: Callable[[float], None] = time.sleep,
     log: Callable[[str], None] = print,
+    max_consecutive_errors: int = MAX_CONSECUTIVE_ERRORS,
 ) -> tuple[list[CaseResult], dict[str, Any], int]:
+    """Score every case. Stops early (summary["stopped_early"]) after repeated failures,
+    so a broken key or an exhausted quota fails in seconds instead of grinding on."""
     if mode not in {"retrieval", "full"}:
         raise ValueError("mode must be 'retrieval' or 'full'")
     if mode == "full" and judge is None:
@@ -105,8 +137,12 @@ def run_evaluation(
     index = with_retries(lambda: rag.build_index(chunks), sleep=sleep)
 
     results: list[CaseResult] = []
+    stopped_early: str | None = None
+    consecutive_errors = 0
+    started = time.monotonic()
     try:
         for number, case in enumerate(cases, start=1):
+            case_started = time.monotonic()
             result = CaseResult(id=case.id, question=case.question, answerable=case.answerable)
             try:
                 retrieved = with_retries(lambda: rag.retrieve(index, case.question, top_k=top_k), sleep=sleep)
@@ -138,14 +174,32 @@ def run_evaluation(
                 result.error = f"{type(exc).__name__}: {exc}"[:300]
 
             results.append(result)
-            status = result.error or (
-                f"rank={result.rank}" if case.answerable else f"refused={result.refused}"
-            )
-            log(f"[{number:02d}/{len(cases)}] {case.id}: {status}")
+            if case.answerable:
+                status = f"rank={result.rank or 'miss'}"
+                if result.correctness is not None:
+                    status += f" correct={result.correctness:g}"
+            else:
+                status = f"refused={result.refused}" if mode == "full" else "unanswerable (checked in full mode)"
+            if result.error:
+                status = f"ERROR {result.error}"
+            log(f"[{number:02d}/{len(cases)}] {case.id}: {status} ({time.monotonic() - case_started:.1f}s)")
+
+            if result.error:
+                consecutive_errors += 1
+                if is_daily_quota_error(result.error) or consecutive_errors >= max_consecutive_errors:
+                    stopped_early = f"Stopped after {number} of {len(cases)} questions. {explain_error(result.error)}"
+                    log(stopped_early)
+                    break
+            else:
+                consecutive_errors = 0
     finally:
         index.delete()
 
-    return results, aggregate(results, top_k), len(chunks)
+    summary = aggregate(results, top_k)
+    summary["planned_cases"] = len(cases)
+    summary["stopped_early"] = stopped_early
+    summary["duration_seconds"] = round(time.monotonic() - started, 1)
+    return results, summary, len(chunks)
 
 
 def write_outputs(
@@ -197,7 +251,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--chunk-size", type=int, default=900)
     parser.add_argument("--overlap", type=int, default=150)
     parser.add_argument("--top-k", type=int, default=4)
-    parser.add_argument("--delay", type=float, default=4.0, help="Seconds to wait between LLM calls (free tier).")
+    parser.add_argument("--delay", type=float, default=6.0, help="Seconds to wait between LLM calls (free tier).")
     parser.add_argument("--label", default="", help="Short note stored in history.csv, e.g. 'baseline'.")
     parser.add_argument("--output-dir", default="eval/results")
     parser.add_argument("--update-readme", action="store_true", help="Write the summary table into README.md.")
@@ -205,6 +259,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    # Print progress line by line, so it shows up live in GitHub Actions logs.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(line_buffering=True)
     args = parse_args(argv)
     api_key = os.getenv("GEMINI_API_KEY", "")
     if not api_key:
@@ -215,26 +272,40 @@ def main(argv: Sequence[str] | None = None) -> int:
     files = supported_files_in(corpus_dir)
     parts = load_paths(files)
 
-    rag = GeminiRAG(api_key=api_key)
+    # Retries are handled once, in with_retries(). The SDK's own retries are turned off so
+    # they do not stack on top (6 SDK retries x 5 script retries made one bad call take minutes).
+    rag = GeminiRAG(api_key=api_key, max_retries=0, request_timeout=60)
     judge = None
     if args.mode == "full":
         from langchain_google_genai import ChatGoogleGenerativeAI
 
         judge = ChatGoogleGenerativeAI(
-            model=DEFAULT_GENERATION_MODEL, google_api_key=api_key, temperature=0, max_output_tokens=300
+            model=DEFAULT_GENERATION_MODEL,
+            google_api_key=api_key,
+            temperature=0,
+            max_output_tokens=300,
+            max_retries=0,
+            timeout=60,
         )
 
-    results, summary, chunk_count = run_evaluation(
-        rag,
-        cases,
-        parts,
-        mode=args.mode,
-        chunk_size=args.chunk_size,
-        overlap=args.overlap,
-        top_k=args.top_k,
-        judge=judge,
-        delay=args.delay if args.mode == "full" else 0.0,
-    )
+    calls = len(cases) * (3 if args.mode == "full" else 1)
+    print(f"Mode: {args.mode} | {len(cases)} questions | about {calls} Gemini calls")
+    try:
+        results, summary, chunk_count = run_evaluation(
+            rag,
+            cases,
+            parts,
+            mode=args.mode,
+            chunk_size=args.chunk_size,
+            overlap=args.overlap,
+            top_k=args.top_k,
+            judge=judge,
+            delay=args.delay if args.mode == "full" else 0.0,
+        )
+    except Exception as exc:  # noqa: BLE001 - e.g. the index could not be built at all
+        print(f"\nEvaluation could not start: {type(exc).__name__}: {str(exc)[:300]}", file=sys.stderr)
+        print(explain_error(str(exc)), file=sys.stderr)
+        return 1
 
     config = {
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
@@ -249,12 +320,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         "generation_model": DEFAULT_GENERATION_MODEL,
         "judge_model": DEFAULT_GENERATION_MODEL if args.mode == "full" else "",
     }
+    if summary["stopped_early"]:
+        # Keep the partial results for debugging, but do not overwrite the published scores.
+        output_dir = Path(args.output_dir) / "failed-run"
+        report = write_outputs(output_dir, results, summary, config)
+        print(f"\n{summary['stopped_early']}", file=sys.stderr)
+        print(f"Partial results: {report}", file=sys.stderr)
+        return 1
+
     report = write_outputs(Path(args.output_dir), results, summary, config)
-    if args.update_readme and summary["errors"] < summary["cases"]:
+    if args.update_readme:
         update_readme(Path(__file__).resolve().parent / "README.md", summary, config)
-    print()
+    print(f"\nFinished in {summary['duration_seconds']:.0f} seconds.\n")
     print(report.read_text(encoding="utf-8"))
-    return 1 if summary["errors"] == summary["cases"] else 0
+    return 0
 
 
 if __name__ == "__main__":

@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "full = retrieval + answers + LLM judge, retrieval = retrieval metrics only"
+        description: "retrieval = search scores only (about 1 minute). full = also answer quality and refusals (about 8 minutes)"
         type: choice
-        options: [full, retrieval]
-        default: full
+        options: [retrieval, full]
+        default: retrieval
       chunk_size:
         description: "Chunk size in characters"
         default: "900"
@@ -52,7 +52,9 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run evaluation
+        timeout-minutes: 20
         env:
+          PYTHONUNBUFFERED: "1"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MODE: ${{ inputs.mode }}
           CHUNK_SIZE: ${{ inputs.chunk_size }}

@@ -170,3 +170,48 @@ def test_update_readme_replaces_only_the_results_block(tmp_path):
     assert "old" not in text and "| Retrieval Hit@1 | 50.0% |" in text and "Per-question" not in text
     assert update_readme(readme, summary, config)  # idempotent
     assert text == readme.read_text(encoding="utf-8")
+
+
+def test_daily_quota_errors_are_not_retried():
+    from evaluate import explain_error, is_daily_quota_error
+
+    sleeps = []
+    daily = "429 RESOURCE_EXHAUSTED: Quota exceeded for metric generate_content_free_tier_requests, limit: GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+    with pytest.raises(RuntimeError):
+        with_retries(lambda: (_ for _ in ()).throw(RuntimeError(daily)), sleep=sleeps.append)
+    assert sleeps == []
+    assert is_daily_quota_error(daily)
+    assert not is_daily_quota_error("429 RESOURCE_EXHAUSTED: GenerateRequestsPerMinutePerProjectPerModel")
+    assert "daily quota" in explain_error(daily)
+    assert "rejected" in explain_error("400 API key not valid. Please pass a valid API key.")
+
+
+class BrokenEmbeddings(HashingEmbeddings):
+    """Indexing works, but every question fails, like a key that hits its quota mid-run."""
+
+    def embed_query(self, text):
+        raise RuntimeError("400 API key not valid")
+
+
+def test_run_stops_early_after_repeated_errors(dataset, corpus_parts):
+    _, cases = dataset
+    rag = GeminiRAG(embeddings=BrokenEmbeddings(), llm=FakeListChatModel(responses=["x"]))
+    results, summary, _ = run_evaluation(rag, cases, corpus_parts, mode="retrieval", sleep=lambda _: None, log=lambda _: None)
+    assert len(results) == 3
+    assert summary["planned_cases"] == len(cases)
+    assert summary["stopped_early"] and "rejected" in summary["stopped_early"]
+
+
+def test_single_error_does_not_stop_the_run(dataset, corpus_parts):
+    _, cases = dataset
+
+    class OneBadQuestion(HashingEmbeddings):
+        def embed_query(self, text):
+            if text == cases[0].question:
+                raise RuntimeError("500 internal error")
+            return super().embed_query(text)
+
+    rag = GeminiRAG(embeddings=OneBadQuestion(), llm=FakeListChatModel(responses=["x"]))
+    results, summary, _ = run_evaluation(rag, cases, corpus_parts, mode="retrieval", sleep=lambda _: None, log=lambda _: None)
+    assert len(results) == len(cases)
+    assert summary["errors"] == 1 and summary["stopped_early"] is None

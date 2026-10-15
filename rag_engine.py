@@ -282,6 +282,8 @@ class GeminiRAG:
         embedding_model: str = DEFAULT_EMBEDDING_MODEL,
         embeddings: Embeddings | None = None,
         llm: BaseChatModel | None = None,
+        max_retries: int = 6,
+        request_timeout: float | None = None,
     ) -> None:
         if (embeddings is None or llm is None) and not api_key:
             raise ValueError("A Gemini API key is required")
@@ -298,6 +300,8 @@ class GeminiRAG:
             model=generation_model,
             google_api_key=api_key,
             max_output_tokens=700,
+            max_retries=max_retries,
+            timeout=request_timeout,
         )
         self.answer_chain = ANSWER_PROMPT | self.llm | StrOutputParser()
 

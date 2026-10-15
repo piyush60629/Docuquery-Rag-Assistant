@@ -94,14 +94,14 @@ Evidence is matched by phrase rather than chunk ID, so results stay comparable w
 _Results will appear here after the first evaluation run. Full per-question results: `eval/results/latest.md`._
 <!-- EVAL_RESULTS_END -->
 
-**Run it on GitHub (no local setup):** add a repository secret named `GEMINI_API_KEY` (Settings → Secrets and variables → Actions), then open **Actions → Evaluate RAG → Run workflow**. The results appear in the run summary and are committed to `eval/results/`.
+**Run it on GitHub (no local setup):** add a repository secret named `GEMINI_API_KEY` (Settings → Secrets and variables → Actions), then open **Actions → Evaluate RAG → Run workflow**. Choose `retrieval` for the search scores (about 1 minute) or `full` to also score answers and refusals (about 8 minutes). Progress is printed live in the run log; the results appear in the run summary and are committed to `eval/results/` and this README. If the API key is wrong or the free-tier quota is used up, the run stops within seconds and explains why.
 
 **Run it locally:**
 
 ```bash
 export GEMINI_API_KEY=your_key            # Windows PowerShell: $env:GEMINI_API_KEY="your_key"
 python evaluate.py --mode retrieval       # retrieval metrics only, fast
-python evaluate.py --mode full            # adds answers + LLM-as-judge scores (~5 minutes on the free tier)
+python evaluate.py --mode full            # adds answers + LLM-as-judge scores (~8 minutes on the free tier)
 python evaluate.py --mode full --chunk-size 600 --label "smaller chunks"   # compare a configuration
 ```
 
