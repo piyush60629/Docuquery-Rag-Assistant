@@ -91,7 +91,20 @@ DocuQuery is evaluated on **35 questions** (`eval/dataset.json`) about the four 
 Evidence is matched by phrase rather than chunk ID, so results stay comparable when the chunk size changes.
 
 <!-- EVAL_RESULTS_START -->
-_Results will appear here after the first evaluation run. Full per-question results: `eval/results/latest.md`._
+**Latest results**
+
+- Run: 2026-10-15 17:40 UTC  
+- Mode: retrieval · chunk size 900 · overlap 150 · top-k 4  
+- Models: embeddings `gemini-embedding-001`, answers `gemini-3.5-flash`, judge ``  
+- Questions: 35 (30 answerable, 5 unanswerable) · chunks indexed: 13 · errors: 0
+
+| Metric | Score |
+|---|---|
+| Retrieval Hit@1 | 80.0% |
+| Retrieval Hit@4 | 96.7% |
+| Retrieval MRR | 0.867 |
+
+Full per-question results: `eval/results/latest.md`.
 <!-- EVAL_RESULTS_END -->
 
 **Run it on GitHub (no local setup):** add a repository secret named `GEMINI_API_KEY` (Settings → Secrets and variables → Actions), then open **Actions → Evaluate RAG → Run workflow**. Choose `retrieval` for the search scores (about 1 minute) or `full` to also score answers and refusals (about 8 minutes). Progress is printed live in the run log; the results appear in the run summary and are committed to `eval/results/` and this README. If the API key is wrong or the free-tier quota is used up, the run stops within seconds and explains why.
