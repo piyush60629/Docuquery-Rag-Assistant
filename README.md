@@ -1,15 +1,16 @@
 # DocuQuery RAG Assistant
 
-A small, deployable Retrieval-Augmented Generation project for a portfolio. Users upload PDF, DOCX, TXT, or Markdown documents and ask questions. The app retrieves relevant document chunks and asks Gemini to answer only from those chunks.
+A deployable Retrieval-Augmented Generation (RAG) project built with **LangChain**, **ChromaDB**, and **Gemini**. Users upload PDF, DOCX, TXT, or Markdown documents and ask questions. The app stores document embeddings in a ChromaDB vector store, retrieves the most relevant chunks, and asks Gemini to answer only from those chunks, with source citations and similarity scores.
 
 ## What this project demonstrates
 
-- Document text extraction
-- Text cleaning and overlapping chunking
-- Gemini text embeddings
-- NumPy cosine-similarity vector search
-- Grounded prompt construction
-- Source passage display
+- Document text extraction (PDF, DOCX, TXT, Markdown)
+- Text cleaning and overlapping chunking with LangChain's `RecursiveCharacterTextSplitter`
+- Gemini text embeddings (`gemini-embedding-001`, 768 dimensions) via `langchain-google-genai`
+- **ChromaDB vector store** with cosine similarity search and chunk metadata (source file, page, chunk ID)
+- Grounded answer generation with a **LangChain (LCEL) chain**: prompt → Gemini → output parser
+- Source passage display with similarity scores
+- Per-session isolation: every user session gets its own ChromaDB collection
 - Streamlit deployment and secrets handling
 
 ## Architecture
@@ -17,34 +18,35 @@ A small, deployable Retrieval-Augmented Generation project for a portfolio. User
 ```text
 Uploaded files
     ↓
-Text extraction
+Text extraction (pypdf, python-docx)
     ↓
-Overlapping chunks
+LangChain RecursiveCharacterTextSplitter → overlapping chunks + metadata
     ↓
-Gemini embeddings
+Gemini embeddings (langchain-google-genai)
     ↓
-In-memory NumPy vector index
+ChromaDB collection (one per session, cosine distance)
     ↓
-Question embedding + cosine similarity
+Question embedding → ChromaDB similarity search → top-k chunks
     ↓
-Top matching chunks
+LangChain LCEL chain: prompt | Gemini | StrOutputParser
     ↓
-Gemini grounded answer + source passages
+Grounded answer + cited source passages
 ```
 
 ## Free resources
 
 - **App hosting:** Streamlit Community Cloud
-- **Generation model:** Gemini 2.5 Flash free tier
+- **Generation model:** Gemini Flash free tier
 - **Embedding model:** Gemini Embedding free tier
-- **Vector search:** NumPy, running inside the app
+- **Vector store:** ChromaDB, running in memory inside the app (no external database needed)
+- **Orchestration:** LangChain
 - **Source control:** GitHub free account
 
 Free tiers have usage limits and can change. This project is intended for learning and portfolio demonstrations, not production workloads.
 
 ## Run locally
 
-1. Install Python 3.11 or 3.12.
+1. Install Python 3.11, 3.12, or 3.13.
 2. Create and activate a virtual environment.
 3. Install dependencies:
 
@@ -63,6 +65,13 @@ GEMINI_API_KEY = "your_api_key"
 
 ```bash
 streamlit run app.py
+```
+
+6. Run the tests (offline; they use fake embeddings and a fake LLM, so no API key is needed):
+
+```bash
+pip install pytest
+python -m pytest -q
 ```
 
 ## Deploy on Streamlit Community Cloud
@@ -97,13 +106,14 @@ Use only public, synthetic, or non-confidential documents. Uploaded content and 
 
 ## Resume wording after deployment
 
-**RAG Knowledge Assistant | Python, Streamlit, Gemini API, Embeddings**
+**DocuQuery – RAG Knowledge Assistant | Python, LangChain, ChromaDB, Gemini API, Streamlit**
 
-- Built and deployed a document-based RAG application that extracts and chunks uploaded files, creates embeddings, and retrieves relevant passages using cosine similarity.
-- Generated answers only from retrieved document content and displayed supporting source passages to improve transparency.
+- Built and deployed a RAG application that chunks uploaded PDF, DOCX, TXT, and Markdown files with LangChain, stores Gemini embeddings in a ChromaDB vector store, and retrieves relevant passages using cosine similarity search.
+- Generated grounded answers through a LangChain (LCEL) chain that cites source passages and similarity scores to reduce hallucinated responses.
 
 ## Limitations and next improvements
 
-- The index is stored in memory and resets when the session ends.
+- ChromaDB runs in memory, so each session's index resets when the session ends or the app restarts. Collections from sessions idle for 6+ hours are removed automatically.
 - Scanned PDFs require OCR, which is not included in this version.
-- A production version should add authentication, persistent vector storage, monitoring, evaluation, and stronger document-access controls.
+- Planned next: a retrieval evaluation set (hit-rate and faithfulness), hybrid keyword + vector search or a reranker, chat memory, and an optional local Ollama backend.
+- A production version should add authentication, persistent vector storage, monitoring, and stronger document-access controls.
