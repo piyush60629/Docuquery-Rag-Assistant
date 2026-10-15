@@ -4,24 +4,17 @@ from __future__ import annotations
 
 import hashlib
 import os
-from io import BytesIO
 from pathlib import Path
 
 import streamlit as st
 
-from document_loader import UnsupportedFileTypeError, load_many
+from document_loader import UnsupportedFileTypeError, load_many, open_paths, supported_files_in
 from rag_engine import GeminiRAG, build_chunks
 
 
 APP_TITLE = "DocuQuery RAG Assistant"
 MAX_FILES = 5
 MAX_TOTAL_BYTES = 15 * 1024 * 1024
-
-
-class NamedBytesIO(BytesIO):
-    def __init__(self, data: bytes, name: str):
-        super().__init__(data)
-        self.name = name
 
 
 def secret_value(name: str, default: str = "") -> str:
@@ -138,19 +131,19 @@ def main() -> None:
 
     col1, col2 = st.columns([1, 1])
     process_clicked = col1.button("Process uploaded documents", type="primary", use_container_width=True)
-    demo_clicked = col2.button("Load included demo document", use_container_width=True)
+    demo_clicked = col2.button("Load included demo documents", use_container_width=True)
 
     files_to_process = list(uploaded_files or [])
     if demo_clicked:
-        demo_path = Path(__file__).parent / "sample_documents" / "retail_pipeline_runbook.txt"
-        files_to_process = [NamedBytesIO(demo_path.read_bytes(), demo_path.name)]
+        demo_dir = Path(__file__).parent / "sample_documents"
+        files_to_process = open_paths(supported_files_in(demo_dir))
         process_clicked = True
 
     if process_clicked:
         if not api_key:
             st.error("Add a Gemini API key in the sidebar or configure it in Streamlit secrets.")
         elif not files_to_process:
-            st.error("Upload at least one document or load the demo document.")
+            st.error("Upload at least one document or load the demo documents.")
         elif len(files_to_process) > MAX_FILES:
             st.error(f"Upload no more than {MAX_FILES} files.")
         elif sum(len(file_obj.getvalue()) for file_obj in files_to_process) > MAX_TOTAL_BYTES:
@@ -245,9 +238,13 @@ def main() -> None:
     else:
         st.markdown(
             "### Good demo questions\n"
+            "The demo set is a synthetic retail pipeline runbook, data quality standards, "
+            "incident history and an onboarding FAQ.\n\n"
             "- What happens when an ETL job fails?\n"
-            "- Which data quality checks are performed?\n"
-            "- How is an incremental load validated?"
+            "- What was the root cause of the linked service authentication failure?\n"
+            "- How is a sales record with an unknown product identifier handled?\n"
+            "- By what time must the Gold tables be ready each day?\n"
+            "- Who is the CEO of the company? *(not in the documents, so it should decline)*"
         )
 
 

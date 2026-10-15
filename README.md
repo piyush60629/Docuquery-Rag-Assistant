@@ -11,7 +11,8 @@ A deployable Retrieval-Augmented Generation (RAG) project built with **LangChain
 - Grounded answer generation with a **LangChain (LCEL) chain**: prompt → Gemini → output parser
 - Source passage display with similarity scores
 - Per-session isolation: every user session gets its own ChromaDB collection
-- Streamlit deployment and secrets handling
+- **RAG evaluation**: retrieval Hit@k and MRR, LLM-as-judge faithfulness and correctness, and refusal accuracy on unanswerable questions
+- Streamlit deployment, secrets handling, and GitHub Actions for tests and evaluation
 
 ## Architecture
 
@@ -74,6 +75,38 @@ pip install pytest
 python -m pytest -q
 ```
 
+## Evaluation
+
+DocuQuery is evaluated on **35 questions** (`eval/dataset.json`) about the four synthetic documents in `sample_documents/`: a pipeline runbook, data quality standards, an incident history, and an onboarding FAQ. Five questions are deliberately **not answerable** from the documents.
+
+| Metric | What it measures |
+|---|---|
+| Retrieval Hit@1 / Hit@k | Share of answerable questions where a chunk containing the evidence is ranked first / in the top k |
+| Retrieval MRR | Mean reciprocal rank of the first chunk with the evidence |
+| Answer faithfulness | LLM judge: are all claims in the answer supported by the retrieved passages? |
+| Answer correctness | LLM judge: does the answer match the reference answer? |
+| Refusal accuracy | Share of unanswerable questions where the assistant declines instead of guessing |
+| False refusal rate | Share of answerable questions where it wrongly declines (lower is better) |
+
+Evidence is matched by phrase rather than chunk ID, so results stay comparable when the chunk size changes.
+
+<!-- EVAL_RESULTS_START -->
+_Results will appear here after the first evaluation run. Full per-question results: `eval/results/latest.md`._
+<!-- EVAL_RESULTS_END -->
+
+**Run it on GitHub (no local setup):** add a repository secret named `GEMINI_API_KEY` (Settings → Secrets and variables → Actions), then open **Actions → Evaluate RAG → Run workflow**. The results appear in the run summary and are committed to `eval/results/`.
+
+**Run it locally:**
+
+```bash
+export GEMINI_API_KEY=your_key            # Windows PowerShell: $env:GEMINI_API_KEY="your_key"
+python evaluate.py --mode retrieval       # retrieval metrics only, fast
+python evaluate.py --mode full            # adds answers + LLM-as-judge scores (~5 minutes on the free tier)
+python evaluate.py --mode full --chunk-size 600 --label "smaller chunks"   # compare a configuration
+```
+
+Every run adds a row to `eval/results/history.csv`, so configurations can be compared before and after a change.
+
 ## Deploy on Streamlit Community Cloud
 
 1. Create a new GitHub repository, for example `docuquery-rag-assistant`.
@@ -94,7 +127,7 @@ Never commit API keys to GitHub.
 
 ## Recommended demo flow
 
-1. Click **Load included demo document**.
+1. Click **Load included demo documents**.
 2. Ask: `What happens when the pipeline fails?`
 3. Open **Retrieved source passages**.
 4. Explain that the answer was generated only after semantic retrieval.
@@ -115,5 +148,6 @@ Use only public, synthetic, or non-confidential documents. Uploaded content and 
 
 - ChromaDB runs in memory, so each session's index resets when the session ends or the app restarts. Collections from sessions idle for 6+ hours are removed automatically.
 - Scanned PDFs require OCR, which is not included in this version.
-- Planned next: a retrieval evaluation set (hit-rate and faithfulness), hybrid keyword + vector search or a reranker, chat memory, and an optional local Ollama backend.
+- The evaluation corpus is small (4 documents, about 13 chunks), so Hit@1 and MRR are the most informative retrieval metrics. The judge uses the same Gemini model family as the generator, which can be slightly lenient.
+- Planned next: hybrid keyword + vector search or a reranker (measured against this evaluation set), chat memory, and an optional local Ollama backend.
 - A production version should add authentication, persistent vector storage, monitoring, and stronger document-access controls.

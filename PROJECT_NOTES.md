@@ -19,7 +19,9 @@ My professional role remains Data Engineer. This project extends my Python and d
 7. How the LangChain LCEL chain (prompt | model | parser) and the prompt keep answers grounded and cited.
 8. Why each session gets its own Chroma collection (user isolation on a shared server) and how stale collections are cleaned up.
 9. Why API keys must be stored in deployment secrets.
-10. Current limitations: no OCR, in-memory vector store (resets with the session), no evaluation set yet.
+10. How the project is evaluated: 35 questions (30 answerable, 5 unanswerable), retrieval Hit@k and MRR, LLM-as-judge faithfulness and correctness, and refusal accuracy. Why evidence phrases instead of chunk IDs (results stay comparable when chunk size changes). Why unanswerable questions matter (they measure hallucination directly).
+11. How evaluation is automated: offline unit tests run on every push (GitHub Actions), and the Gemini-based evaluation runs on demand from the Actions tab and commits its results.
+12. Current limitations: no OCR, in-memory vector store (resets with the session), small evaluation corpus, judge model from the same family as the generator.
 
 ## Honest answer about Coforge
 
