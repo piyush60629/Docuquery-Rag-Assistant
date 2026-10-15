@@ -9,3 +9,4 @@ venv/
 
 # Partial results from evaluation runs that stopped early
 eval/results/failed-run/
+eval-output.log
