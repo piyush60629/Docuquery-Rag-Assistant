@@ -1,0 +1,699 @@
+{
+  "config": {
+    "timestamp": "2026-10-15 17:40 UTC",
+    "label": "baseline",
+    "mode": "retrieval",
+    "chunk_size": 900,
+    "overlap": 150,
+    "top_k": 4,
+    "chunks": 13,
+    "documents": [
+      "data_quality_standards.md",
+      "incident_history.md",
+      "onboarding_faq.md",
+      "retail_pipeline_runbook.txt"
+    ],
+    "embedding_model": "gemini-embedding-001",
+    "generation_model": "gemini-3.5-flash",
+    "judge_model": ""
+  },
+  "summary": {
+    "cases": 35,
+    "answerable_cases": 30,
+    "unanswerable_cases": 5,
+    "errors": 0,
+    "hit_at_1": 0.8,
+    "hit_at_4": 0.9667,
+    "mrr": 0.8667,
+    "planned_cases": 35,
+    "stopped_early": null,
+    "duration_seconds": 6.1
+  },
+  "results": [
+    {
+      "id": "r01",
+      "question": "At what time does Azure Data Factory start the ingestion workflow?",
+      "answerable": true,
+      "rank": 2,
+      "retrieved": [
+        "retail_pipeline_runbook.txt #13",
+        "retail_pipeline_runbook.txt #11",
+        "incident_history.md #5",
+        "onboarding_faq.md #9"
+      ],
+      "top_score": 0.7067,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "r02",
+      "question": "What happens to source files that arrive with an unexpected schema?",
+      "answerable": true,
+      "rank": null,
+      "retrieved": [
+        "data_quality_standards.md #2",
+        "retail_pipeline_runbook.txt #13",
+        "data_quality_standards.md #3",
+        "incident_history.md #4"
+      ],
+      "top_score": 0.6831,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "r03",
+      "question": "Where are invalid sales records written in the Silver layer?",
+      "answerable": true,
+      "rank": 4,
+      "retrieved": [
+        "data_quality_standards.md #3",
+        "retail_pipeline_runbook.txt #12",
+        "data_quality_standards.md #2",
+        "retail_pipeline_runbook.txt #11"
+      ],
+      "top_score": 0.7497,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "r04",
+      "question": "When is the incremental load watermark updated?",
+      "answerable": true,
+      "rank": 2,
+      "retrieved": [
+        "incident_history.md #5",
+        "retail_pipeline_runbook.txt #12",
+        "retail_pipeline_runbook.txt #11",
+        "incident_history.md #6"
+      ],
+      "top_score": 0.6708,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "r05",
+      "question": "Which measures does the main sales fact table store?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "retail_pipeline_runbook.txt #12",
+        "data_quality_standards.md #2",
+        "data_quality_standards.md #3",
+        "retail_pipeline_runbook.txt #11"
+      ],
+      "top_score": 0.6909,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "r06",
+      "question": "How are approved changes deployed to production?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "retail_pipeline_runbook.txt #13",
+        "onboarding_faq.md #8",
+        "onboarding_faq.md #9",
+        "data_quality_standards.md #3"
+      ],
+      "top_score": 0.6855,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "r07",
+      "question": "What does the support engineer do when a pipeline activity fails?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "retail_pipeline_runbook.txt #13",
+        "incident_history.md #5",
+        "incident_history.md #4",
+        "onboarding_faq.md #9"
+      ],
+      "top_score": 0.7204,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "r08",
+      "question": "What metadata is added to each record in the Bronze layer?",
+      "answerable": true,
+      "rank": 4,
+      "retrieved": [
+        "data_quality_standards.md #3",
+        "retail_pipeline_runbook.txt #12",
+        "onboarding_faq.md #10",
+        "retail_pipeline_runbook.txt #11"
+      ],
+      "top_score": 0.7053,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "d01",
+      "question": "What null rate is allowed for optional columns before a warning is raised?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "data_quality_standards.md #2",
+        "data_quality_standards.md #1",
+        "incident_history.md #7",
+        "onboarding_faq.md #9"
+      ],
+      "top_score": 0.7172,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "d02",
+      "question": "What happens when a Critical data quality rule fails?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "data_quality_standards.md #1",
+        "data_quality_standards.md #3",
+        "data_quality_standards.md #2",
+        "retail_pipeline_runbook.txt #13"
+      ],
+      "top_score": 0.7127,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "d03",
+      "question": "How is a sales record with an unknown product identifier handled?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "data_quality_standards.md #2",
+        "data_quality_standards.md #3",
+        "retail_pipeline_runbook.txt #12",
+        "data_quality_standards.md #1"
+      ],
+      "top_score": 0.7092,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "d04",
+      "question": "Where are sales records that arrive more than 7 days late loaded?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "data_quality_standards.md #2",
+        "retail_pipeline_runbook.txt #12",
+        "data_quality_standards.md #3",
+        "retail_pipeline_runbook.txt #11"
+      ],
+      "top_score": 0.6907,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "d05",
+      "question": "What row count variance is allowed between consecutive pipeline stages?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "data_quality_standards.md #2",
+        "data_quality_standards.md #1",
+        "retail_pipeline_runbook.txt #12",
+        "retail_pipeline_runbook.txt #13"
+      ],
+      "top_score": 0.7327,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "d06",
+      "question": "Who approves manual adjustments to net sales amounts?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "data_quality_standards.md #3",
+        "data_quality_standards.md #2",
+        "retail_pipeline_runbook.txt #12",
+        "data_quality_standards.md #1"
+      ],
+      "top_score": 0.6563,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "d07",
+      "question": "When does the data quality dashboard refresh?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "data_quality_standards.md #3",
+        "retail_pipeline_runbook.txt #13",
+        "onboarding_faq.md #9",
+        "data_quality_standards.md #1"
+      ],
+      "top_score": 0.6978,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "d08",
+      "question": "How is a duplicate sales record defined?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "data_quality_standards.md #3",
+        "data_quality_standards.md #2",
+        "retail_pipeline_runbook.txt #12",
+        "data_quality_standards.md #1"
+      ],
+      "top_score": 0.6705,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "d09",
+      "question": "What change in daily sales volume triggers a warning for business review?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "data_quality_standards.md #2",
+        "data_quality_standards.md #1",
+        "data_quality_standards.md #3",
+        "retail_pipeline_runbook.txt #12"
+      ],
+      "top_score": 0.6642,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "i01",
+      "question": "What was the root cause of the linked service authentication failure?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "incident_history.md #5",
+        "incident_history.md #6",
+        "retail_pipeline_runbook.txt #13",
+        "incident_history.md #4"
+      ],
+      "top_score": 0.7242,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "i02",
+      "question": "How was the Gold layer timeout incident resolved?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "incident_history.md #5",
+        "incident_history.md #6",
+        "onboarding_faq.md #9",
+        "incident_history.md #7"
+      ],
+      "top_score": 0.7085,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "i03",
+      "question": "Why were sales duplicated after a file was resent?",
+      "answerable": true,
+      "rank": 2,
+      "retrieved": [
+        "data_quality_standards.md #3",
+        "incident_history.md #6",
+        "retail_pipeline_runbook.txt #12",
+        "incident_history.md #7"
+      ],
+      "top_score": 0.6795,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "i04",
+      "question": "What caused the out of memory error in the Databricks job?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "incident_history.md #6",
+        "incident_history.md #7",
+        "incident_history.md #5",
+        "incident_history.md #4"
+      ],
+      "top_score": 0.6756,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "i05",
+      "question": "Why did the final load into Snowflake stop?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "incident_history.md #7",
+        "incident_history.md #6",
+        "retail_pipeline_runbook.txt #12",
+        "incident_history.md #5"
+      ],
+      "top_score": 0.7003,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "i06",
+      "question": "Which new column caused the store file schema drift incident?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "incident_history.md #4",
+        "incident_history.md #7",
+        "incident_history.md #6",
+        "incident_history.md #5"
+      ],
+      "top_score": 0.6824,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "i07",
+      "question": "What prevention step was added for expiring Key Vault secrets?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "incident_history.md #5",
+        "incident_history.md #6",
+        "retail_pipeline_runbook.txt #13",
+        "incident_history.md #7"
+      ],
+      "top_score": 0.6288,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "o01",
+      "question": "By what time must the Gold tables be ready each day?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "onboarding_faq.md #9",
+        "onboarding_faq.md #10",
+        "data_quality_standards.md #1",
+        "onboarding_faq.md #8"
+      ],
+      "top_score": 0.6907,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "o02",
+      "question": "How long is one on-call shift?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "onboarding_faq.md #9",
+        "onboarding_faq.md #8",
+        "incident_history.md #5",
+        "incident_history.md #4"
+      ],
+      "top_score": 0.6368,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "o03",
+      "question": "What is the naming convention for Databricks notebooks?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "onboarding_faq.md #10",
+        "onboarding_faq.md #9",
+        "onboarding_faq.md #8",
+        "incident_history.md #6"
+      ],
+      "top_score": 0.7351,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "o04",
+      "question": "What format should a new feature branch name follow?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "onboarding_faq.md #10",
+        "onboarding_faq.md #9",
+        "onboarding_faq.md #8",
+        "data_quality_standards.md #1"
+      ],
+      "top_score": 0.6293,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "o05",
+      "question": "How long does it usually take to get development environment access?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "onboarding_faq.md #8",
+        "retail_pipeline_runbook.txt #13",
+        "onboarding_faq.md #9",
+        "onboarding_faq.md #10"
+      ],
+      "top_score": 0.7104,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "o06",
+      "question": "What should the on-call engineer do if the pipeline might miss the report deadline?",
+      "answerable": true,
+      "rank": 1,
+      "retrieved": [
+        "onboarding_faq.md #9",
+        "incident_history.md #5",
+        "retail_pipeline_runbook.txt #13",
+        "data_quality_standards.md #2"
+      ],
+      "top_score": 0.7327,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "u01",
+      "question": "What size is the Snowflake virtual warehouse used for the final load?",
+      "answerable": false,
+      "rank": null,
+      "retrieved": [
+        "incident_history.md #7",
+        "retail_pipeline_runbook.txt #12",
+        "data_quality_standards.md #3",
+        "data_quality_standards.md #2"
+      ],
+      "top_score": 0.6813,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "u02",
+      "question": "Who is the CEO of the retail company?",
+      "answerable": false,
+      "rank": null,
+      "retrieved": [
+        "retail_pipeline_runbook.txt #11",
+        "onboarding_faq.md #8",
+        "data_quality_standards.md #1",
+        "onboarding_faq.md #9"
+      ],
+      "top_score": 0.5823,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "u03",
+      "question": "How many stores does the company operate?",
+      "answerable": false,
+      "rank": null,
+      "retrieved": [
+        "onboarding_faq.md #9",
+        "retail_pipeline_runbook.txt #11",
+        "onboarding_faq.md #8",
+        "incident_history.md #6"
+      ],
+      "top_score": 0.5941,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "u04",
+      "question": "Which Power BI licence does the reporting team use?",
+      "answerable": false,
+      "rank": null,
+      "retrieved": [
+        "onboarding_faq.md #9",
+        "onboarding_faq.md #8",
+        "onboarding_faq.md #10",
+        "data_quality_standards.md #3"
+      ],
+      "top_score": 0.6584,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    },
+    {
+      "id": "u05",
+      "question": "What is the monthly cost of the Azure Databricks workspace?",
+      "answerable": false,
+      "rank": null,
+      "retrieved": [
+        "onboarding_faq.md #10",
+        "incident_history.md #6",
+        "incident_history.md #5",
+        "onboarding_faq.md #8"
+      ],
+      "top_score": 0.6072,
+      "answer": null,
+      "refused": null,
+      "faithfulness": null,
+      "correctness": null,
+      "judge_reason": null,
+      "error": null
+    }
+  ]
+}

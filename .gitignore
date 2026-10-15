@@ -6,3 +6,7 @@ venv/
 .env
 .streamlit/secrets.toml
 .DS_Store
+
+# Partial results from evaluation runs that stopped early
+eval/results/failed-run/
+eval-output.log

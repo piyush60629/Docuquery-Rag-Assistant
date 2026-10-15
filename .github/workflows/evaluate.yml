@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "full = retrieval + answers + LLM judge, retrieval = retrieval metrics only"
+        description: "retrieval = search scores only (about 1 minute). full = also answer quality and refusals (about 8 minutes)"
         type: choice
-        options: [full, retrieval]
-        default: full
+        options: [retrieval, full]
+        default: retrieval
       chunk_size:
         description: "Chunk size in characters"
         default: "900"
@@ -52,7 +52,9 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run evaluation
+        timeout-minutes: 20
         env:
+          PYTHONUNBUFFERED: "1"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MODE: ${{ inputs.mode }}
           CHUNK_SIZE: ${{ inputs.chunk_size }}
@@ -64,12 +66,22 @@ jobs:
             echo "::error::Add a repository secret named GEMINI_API_KEY first (Settings -> Secrets and variables -> Actions)."
             exit 1
           fi
-          python evaluate.py --mode "$MODE" --chunk-size "$CHUNK_SIZE" --overlap "$OVERLAP" --top-k "$TOP_K" --label "$LABEL" --update-readme
+          set -o pipefail
+          if ! python evaluate.py --mode "$MODE" --chunk-size "$CHUNK_SIZE" --overlap "$OVERLAP" --top-k "$TOP_K" --label "$LABEL" --update-readme 2>&1 | tee eval-output.log; then
+            reason=$(grep -E "Stopped after|could not start|Gemini|Error" eval-output.log | tail -2 | tr '\n' ' ')
+            echo "::error title=Evaluation failed::${reason:-See the Run evaluation log for details.}"
+            exit 1
+          fi
 
       - name: Show results in the run summary
         if: always()
         run: |
-          if [ -f eval/results/latest.md ]; then cat eval/results/latest.md >> "$GITHUB_STEP_SUMMARY"; fi
+          if [ -f eval/results/failed-run/latest.md ]; then
+            echo "## Run stopped early (partial results)" >> "$GITHUB_STEP_SUMMARY"
+            cat eval/results/failed-run/latest.md >> "$GITHUB_STEP_SUMMARY"
+          elif [ -f eval/results/latest.md ]; then
+            cat eval/results/latest.md >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload results
         if: always()
