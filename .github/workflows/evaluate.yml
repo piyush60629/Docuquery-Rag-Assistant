@@ -1,0 +1,95 @@
+name: Evaluate RAG
+
+# Run manually from the Actions tab: Evaluate RAG -> Run workflow.
+# Needs a repository secret named GEMINI_API_KEY (Settings -> Secrets and variables -> Actions).
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "full = retrieval + answers + LLM judge, retrieval = retrieval metrics only"
+        type: choice
+        options: [full, retrieval]
+        default: full
+      chunk_size:
+        description: "Chunk size in characters"
+        default: "900"
+      overlap:
+        description: "Chunk overlap in characters"
+        default: "150"
+      top_k:
+        description: "Chunks retrieved per question"
+        default: "4"
+      label:
+        description: "Short note for history.csv, e.g. baseline"
+        default: "baseline"
+      commit_results:
+        description: "Commit results (eval/results and the README table) to this branch"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: evaluate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run evaluation
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MODE: ${{ inputs.mode }}
+          CHUNK_SIZE: ${{ inputs.chunk_size }}
+          OVERLAP: ${{ inputs.overlap }}
+          TOP_K: ${{ inputs.top_k }}
+          LABEL: ${{ inputs.label }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "::error::Add a repository secret named GEMINI_API_KEY first (Settings -> Secrets and variables -> Actions)."
+            exit 1
+          fi
+          python evaluate.py --mode "$MODE" --chunk-size "$CHUNK_SIZE" --overlap "$OVERLAP" --top-k "$TOP_K" --label "$LABEL" --update-readme
+
+      - name: Show results in the run summary
+        if: always()
+        run: |
+          if [ -f eval/results/latest.md ]; then cat eval/results/latest.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: eval/results/
+          if-no-files-found: ignore
+
+      - name: Commit results
+        if: inputs.commit_results
+        env:
+          LABEL: ${{ inputs.label }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add eval/results README.md
+          if git diff --cached --quiet; then
+            echo "No result changes to commit."
+            exit 0
+          fi
+          git commit -m "Update evaluation results ($LABEL)"
+          git push

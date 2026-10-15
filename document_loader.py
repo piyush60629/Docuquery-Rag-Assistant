@@ -77,3 +77,30 @@ def load_many(files: Iterable[BinaryIO]) -> list[DocumentPart]:
     for file_obj in files:
         parts.extend(load_uploaded_file(file_obj))
     return parts
+
+
+SUPPORTED_SUFFIXES = {".pdf", ".docx", ".txt", ".md"}
+
+
+class NamedBytesIO(BytesIO):
+    """In-memory file with a `name`, so local files look like Streamlit uploads."""
+
+    def __init__(self, data: bytes, name: str):
+        super().__init__(data)
+        self.name = name
+
+
+def open_paths(paths: Iterable[str | Path]) -> list[NamedBytesIO]:
+    return [NamedBytesIO(Path(path).read_bytes(), Path(path).name) for path in paths]
+
+
+def supported_files_in(directory: str | Path) -> list[Path]:
+    return sorted(
+        path for path in Path(directory).iterdir() if path.is_file() and path.suffix.lower() in SUPPORTED_SUFFIXES
+    )
+
+
+def load_paths(paths: Iterable[str | Path]) -> list[DocumentPart]:
+    """Extract text from files on disk (used by the demo button and the evaluation script)."""
+
+    return load_many(open_paths(paths))
