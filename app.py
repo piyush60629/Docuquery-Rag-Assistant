@@ -70,15 +70,28 @@ def calculate_file_signature(files: list) -> str:
     return digest.hexdigest()
 
 
+def get_rag(api_key: str) -> GeminiRAG:
+    """Reuse one RAG service (LangChain Gemini clients) per session and API key."""
+
+    key_hash = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    if st.session_state.get("rag_key_hash") != key_hash:
+        st.session_state.rag = GeminiRAG(api_key=api_key)
+        st.session_state.rag_key_hash = key_hash
+    return st.session_state.rag
+
+
 def reset_index() -> None:
-    for key in ("chunks", "embeddings", "document_signature", "messages", "document_names"):
+    index = st.session_state.get("vector_index")
+    if index is not None:
+        index.delete()  # free the ChromaDB collection for this session
+    for key in ("chunks", "vector_index", "document_signature", "messages", "document_names"):
         st.session_state.pop(key, None)
 
 
 def app_header() -> None:
     st.title(APP_TITLE)
     st.caption(
-        "Upload documents, build a small semantic index, and ask questions answered only from your content."
+        "Upload documents, index them in a ChromaDB vector store, and ask questions answered only from your content."
     )
 
 
@@ -93,10 +106,11 @@ def sidebar(api_key_ready: bool) -> tuple[int, int, int]:
         st.markdown(
             "**RAG flow**\n\n"
             "1. Extract text\n"
-            "2. Split into chunks\n"
-            "3. Create embeddings\n"
-            "4. Retrieve similar chunks\n"
-            "5. Generate a grounded answer"
+            "2. Split into chunks (LangChain text splitter)\n"
+            "3. Create Gemini embeddings\n"
+            "4. Store vectors in ChromaDB\n"
+            "5. Retrieve similar chunks (cosine similarity)\n"
+            "6. Generate a grounded answer (LangChain chain)"
         )
         st.warning(
             "Use only non-confidential demo files. Relevant document text is sent to the Gemini API."
@@ -154,12 +168,13 @@ def main() -> None:
                     if not chunks:
                         raise ValueError("No searchable chunks could be created.")
 
-                    st.write("Creating embeddings")
-                    rag = GeminiRAG(api_key=api_key)
-                    embeddings = rag.embed_documents(chunks)
+                    st.write("Creating embeddings and storing them in ChromaDB")
+                    rag = get_rag(api_key)
+                    vector_index = rag.build_index(chunks)
 
+                    reset_index()  # drop the previous collection before switching
                     st.session_state.chunks = chunks
-                    st.session_state.embeddings = embeddings
+                    st.session_state.vector_index = vector_index
                     st.session_state.document_names = sorted({chunk.source for chunk in chunks})
                     st.session_state.document_signature = calculate_file_signature(files_to_process)
                     st.session_state.messages = []
@@ -169,11 +184,12 @@ def main() -> None:
             except Exception as exc:
                 st.error(f"Could not process the documents: {exc}")
 
-    if "chunks" in st.session_state:
+    if "vector_index" in st.session_state:
         names = ", ".join(st.session_state.document_names)
-        metric1, metric2 = st.columns(2)
+        metric1, metric2, metric3 = st.columns(3)
         metric1.metric("Documents", len(st.session_state.document_names))
         metric2.metric("Searchable chunks", len(st.session_state.chunks))
+        metric3.metric("Vector store", "ChromaDB")
         st.info(f"Ready to answer questions from: {names}")
 
         for message in st.session_state.get("messages", []):
@@ -196,11 +212,10 @@ def main() -> None:
             with st.chat_message("assistant"):
                 try:
                     with st.spinner("Searching the documents..."):
-                        rag = GeminiRAG(api_key=api_key)
+                        rag = get_rag(api_key)
                         results = rag.retrieve(
+                            st.session_state.vector_index,
                             question,
-                            st.session_state.chunks,
-                            st.session_state.embeddings,
                             top_k=top_k,
                         )
                         answer = rag.answer(question, results)
@@ -223,7 +238,10 @@ def main() -> None:
                         {"role": "assistant", "content": answer, "sources": sources}
                     )
                 except Exception as exc:
-                    st.error(f"Could not answer the question: {exc}")
+                    st.error(
+                        f"Could not answer the question: {exc}. "
+                        "If the session was idle for a long time, process the documents again."
+                    )
     else:
         st.markdown(
             "### Good demo questions\n"

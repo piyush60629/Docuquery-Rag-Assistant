@@ -2,7 +2,7 @@
 
 ## One-line description
 
-A deployed RAG application that answers questions from user-uploaded documents using Gemini embeddings, cosine-similarity retrieval, and grounded generation.
+A deployed RAG application that answers questions from user-uploaded documents using LangChain for chunking and orchestration, Gemini embeddings stored in a ChromaDB vector store, cosine-similarity retrieval, and grounded generation with citations.
 
 ## Why it is believable for my profile
 
@@ -11,13 +11,15 @@ My professional role remains Data Engineer. This project extends my Python and d
 ## Components I should be able to explain
 
 1. File extraction for PDF, DOCX, TXT, and Markdown.
-2. Why long text is split into overlapping chunks.
-3. What an embedding represents.
-4. How cosine similarity finds semantically related chunks.
-5. Why only top matching chunks are sent to the LLM.
-6. How the prompt prevents unsupported answers.
-7. Why API keys must be stored in deployment secrets.
-8. Current limitations: no OCR, no permanent vector database, session-only storage.
+2. Why long text is split into overlapping chunks, and how `RecursiveCharacterTextSplitter` tries paragraph → line → sentence → word boundaries.
+3. What an embedding represents, and why documents and questions use different task types (RETRIEVAL_DOCUMENT vs RETRIEVAL_QUERY).
+4. Why a vector database (ChromaDB) instead of a NumPy array: metadata stored with each vector, HNSW approximate search that scales, and a standard API that could be swapped for a persistent or hosted store.
+5. How cosine similarity finds semantically related chunks (Chroma returns cosine distance; similarity = 1 − distance).
+6. Why only top matching chunks are sent to the LLM.
+7. How the LangChain LCEL chain (prompt | model | parser) and the prompt keep answers grounded and cited.
+8. Why each session gets its own Chroma collection (user isolation on a shared server) and how stale collections are cleaned up.
+9. Why API keys must be stored in deployment secrets.
+10. Current limitations: no OCR, in-memory vector store (resets with the session), no evaluation set yet.
 
 ## Honest answer about Coforge
 
