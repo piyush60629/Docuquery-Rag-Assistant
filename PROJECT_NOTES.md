@@ -21,7 +21,8 @@ My professional role remains Data Engineer. This project extends my Python and d
 9. Why API keys must be stored in deployment secrets.
 10. How the project is evaluated: 35 questions (30 answerable, 5 unanswerable), retrieval Hit@k and MRR, LLM-as-judge faithfulness and correctness, and refusal accuracy. Why evidence phrases instead of chunk IDs (results stay comparable when chunk size changes). Why unanswerable questions matter (they measure hallucination directly).
 11. How evaluation is automated: offline unit tests run on every push (GitHub Actions), and the Gemini-based evaluation runs on demand from the Actions tab and commits its results.
-12. Current limitations: no OCR, in-memory vector store (resets with the session), small evaluation corpus, judge model from the same family as the generator.
+12. Why section-aware chunking: fixed-size chunks of the plain-text runbook mixed several topics (Bronze, Silver, incremental load) in one chunk, which blurred their embeddings, and the evaluation showed most misses came from that file. Splitting on headings first and prefixing each chunk with its heading path keeps one topic per chunk. The change was measured on the same 35 questions before and after.
+13. Current limitations: no OCR, in-memory vector store (resets with the session), small evaluation corpus, judge model from the same family as the generator.
 
 ## Honest answer about Coforge
 

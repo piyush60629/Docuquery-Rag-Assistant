@@ -1,12 +1,13 @@
 {
   "config": {
-    "timestamp": "2026-10-15 17:40 UTC",
-    "label": "baseline",
+    "timestamp": "2026-10-17 14:25 UTC",
+    "label": "section-chunking",
     "mode": "retrieval",
+    "chunking": "sections",
     "chunk_size": 900,
     "overlap": 150,
     "top_k": 4,
-    "chunks": 13,
+    "chunks": 30,
     "documents": [
       "data_quality_standards.md",
       "incident_history.md",
@@ -22,26 +23,26 @@
     "answerable_cases": 30,
     "unanswerable_cases": 5,
     "errors": 0,
-    "hit_at_1": 0.8,
-    "hit_at_4": 0.9667,
-    "mrr": 0.8667,
+    "hit_at_1": 0.9667,
+    "hit_at_4": 1.0,
+    "mrr": 0.9833,
     "planned_cases": 35,
     "stopped_early": null,
-    "duration_seconds": 6.1
+    "duration_seconds": 5.7
   },
   "results": [
     {
       "id": "r01",
       "question": "At what time does Azure Data Factory start the ingestion workflow?",
       "answerable": true,
-      "rank": 2,
+      "rank": 1,
       "retrieved": [
-        "retail_pipeline_runbook.txt #13",
-        "retail_pipeline_runbook.txt #11",
-        "incident_history.md #5",
-        "onboarding_faq.md #9"
+        "retail_pipeline_runbook.txt #23",
+        "retail_pipeline_runbook.txt #29",
+        "onboarding_faq.md #18",
+        "incident_history.md #10"
       ],
-      "top_score": 0.7067,
+      "top_score": 0.7425,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -53,14 +54,14 @@
       "id": "r02",
       "question": "What happens to source files that arrive with an unexpected schema?",
       "answerable": true,
-      "rank": null,
+      "rank": 2,
       "retrieved": [
-        "data_quality_standards.md #2",
-        "retail_pipeline_runbook.txt #13",
-        "data_quality_standards.md #3",
-        "incident_history.md #4"
+        "incident_history.md #9",
+        "retail_pipeline_runbook.txt #24",
+        "data_quality_standards.md #4",
+        "retail_pipeline_runbook.txt #29"
       ],
-      "top_score": 0.6831,
+      "top_score": 0.709,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -72,14 +73,14 @@
       "id": "r03",
       "question": "Where are invalid sales records written in the Silver layer?",
       "answerable": true,
-      "rank": 4,
+      "rank": 1,
       "retrieved": [
-        "data_quality_standards.md #3",
-        "retail_pipeline_runbook.txt #12",
+        "retail_pipeline_runbook.txt #25",
         "data_quality_standards.md #2",
-        "retail_pipeline_runbook.txt #11"
+        "data_quality_standards.md #5",
+        "retail_pipeline_runbook.txt #24"
       ],
-      "top_score": 0.7497,
+      "top_score": 0.8188,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -91,14 +92,14 @@
       "id": "r04",
       "question": "When is the incremental load watermark updated?",
       "answerable": true,
-      "rank": 2,
+      "rank": 1,
       "retrieved": [
-        "incident_history.md #5",
-        "retail_pipeline_runbook.txt #12",
-        "retail_pipeline_runbook.txt #11",
-        "incident_history.md #6"
+        "retail_pipeline_runbook.txt #26",
+        "incident_history.md #10",
+        "incident_history.md #14",
+        "retail_pipeline_runbook.txt #23"
       ],
-      "top_score": 0.6708,
+      "top_score": 0.789,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -112,12 +113,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "retail_pipeline_runbook.txt #12",
-        "data_quality_standards.md #2",
+        "retail_pipeline_runbook.txt #27",
         "data_quality_standards.md #3",
-        "retail_pipeline_runbook.txt #11"
+        "data_quality_standards.md #4",
+        "retail_pipeline_runbook.txt #28"
       ],
-      "top_score": 0.6909,
+      "top_score": 0.6955,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -131,12 +132,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "retail_pipeline_runbook.txt #13",
-        "onboarding_faq.md #8",
-        "onboarding_faq.md #9",
-        "data_quality_standards.md #3"
+        "retail_pipeline_runbook.txt #30",
+        "onboarding_faq.md #17",
+        "onboarding_faq.md #21",
+        "data_quality_standards.md #7"
       ],
-      "top_score": 0.6855,
+      "top_score": 0.7074,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -150,12 +151,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "retail_pipeline_runbook.txt #13",
-        "incident_history.md #5",
-        "incident_history.md #4",
-        "onboarding_faq.md #9"
+        "retail_pipeline_runbook.txt #29",
+        "incident_history.md #11",
+        "incident_history.md #8",
+        "incident_history.md #10"
       ],
-      "top_score": 0.7204,
+      "top_score": 0.7523,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -167,14 +168,14 @@
       "id": "r08",
       "question": "What metadata is added to each record in the Bronze layer?",
       "answerable": true,
-      "rank": 4,
+      "rank": 1,
       "retrieved": [
-        "data_quality_standards.md #3",
-        "retail_pipeline_runbook.txt #12",
-        "onboarding_faq.md #10",
-        "retail_pipeline_runbook.txt #11"
+        "retail_pipeline_runbook.txt #24",
+        "data_quality_standards.md #5",
+        "retail_pipeline_runbook.txt #25",
+        "data_quality_standards.md #2"
       ],
-      "top_score": 0.7053,
+      "top_score": 0.7895,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -188,12 +189,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
+        "data_quality_standards.md #3",
         "data_quality_standards.md #2",
         "data_quality_standards.md #1",
-        "incident_history.md #7",
-        "onboarding_faq.md #9"
+        "incident_history.md #13"
       ],
-      "top_score": 0.7172,
+      "top_score": 0.7266,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -207,12 +208,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "data_quality_standards.md #1",
-        "data_quality_standards.md #3",
         "data_quality_standards.md #2",
-        "retail_pipeline_runbook.txt #13"
+        "data_quality_standards.md #7",
+        "data_quality_standards.md #3",
+        "data_quality_standards.md #1"
       ],
-      "top_score": 0.7127,
+      "top_score": 0.7556,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -226,12 +227,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "data_quality_standards.md #2",
-        "data_quality_standards.md #3",
-        "retail_pipeline_runbook.txt #12",
-        "data_quality_standards.md #1"
+        "data_quality_standards.md #4",
+        "data_quality_standards.md #5",
+        "incident_history.md #12",
+        "retail_pipeline_runbook.txt #25"
       ],
-      "top_score": 0.7092,
+      "top_score": 0.7568,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -245,12 +246,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "data_quality_standards.md #2",
-        "retail_pipeline_runbook.txt #12",
         "data_quality_standards.md #3",
-        "retail_pipeline_runbook.txt #11"
+        "incident_history.md #12",
+        "data_quality_standards.md #4",
+        "retail_pipeline_runbook.txt #23"
       ],
-      "top_score": 0.6907,
+      "top_score": 0.6585,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -264,12 +265,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "data_quality_standards.md #2",
-        "data_quality_standards.md #1",
-        "retail_pipeline_runbook.txt #12",
-        "retail_pipeline_runbook.txt #13"
+        "data_quality_standards.md #3",
+        "retail_pipeline_runbook.txt #28",
+        "retail_pipeline_runbook.txt #26",
+        "retail_pipeline_runbook.txt #25"
       ],
-      "top_score": 0.7327,
+      "top_score": 0.7261,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -283,12 +284,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
+        "data_quality_standards.md #6",
+        "data_quality_standards.md #4",
         "data_quality_standards.md #3",
-        "data_quality_standards.md #2",
-        "retail_pipeline_runbook.txt #12",
-        "data_quality_standards.md #1"
+        "retail_pipeline_runbook.txt #25"
       ],
-      "top_score": 0.6563,
+      "top_score": 0.6867,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -302,12 +303,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "data_quality_standards.md #3",
-        "retail_pipeline_runbook.txt #13",
-        "onboarding_faq.md #9",
-        "data_quality_standards.md #1"
+        "data_quality_standards.md #7",
+        "onboarding_faq.md #18",
+        "data_quality_standards.md #2",
+        "data_quality_standards.md #3"
       ],
-      "top_score": 0.6978,
+      "top_score": 0.7689,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -321,12 +322,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "data_quality_standards.md #3",
-        "data_quality_standards.md #2",
-        "retail_pipeline_runbook.txt #12",
-        "data_quality_standards.md #1"
+        "data_quality_standards.md #5",
+        "incident_history.md #12",
+        "retail_pipeline_runbook.txt #25",
+        "data_quality_standards.md #4"
       ],
-      "top_score": 0.6705,
+      "top_score": 0.7256,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -340,12 +341,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "data_quality_standards.md #2",
-        "data_quality_standards.md #1",
         "data_quality_standards.md #3",
-        "retail_pipeline_runbook.txt #12"
+        "data_quality_standards.md #2",
+        "incident_history.md #12",
+        "data_quality_standards.md #7"
       ],
-      "top_score": 0.6642,
+      "top_score": 0.6502,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -359,12 +360,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "incident_history.md #5",
-        "incident_history.md #6",
-        "retail_pipeline_runbook.txt #13",
-        "incident_history.md #4"
+        "incident_history.md #11",
+        "incident_history.md #14",
+        "retail_pipeline_runbook.txt #29",
+        "incident_history.md #13"
       ],
-      "top_score": 0.7242,
+      "top_score": 0.7885,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -378,12 +379,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "incident_history.md #5",
-        "incident_history.md #6",
-        "onboarding_faq.md #9",
-        "incident_history.md #7"
+        "incident_history.md #10",
+        "incident_history.md #12",
+        "incident_history.md #13",
+        "incident_history.md #14"
       ],
-      "top_score": 0.7085,
+      "top_score": 0.7376,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -395,14 +396,14 @@
       "id": "i03",
       "question": "Why were sales duplicated after a file was resent?",
       "answerable": true,
-      "rank": 2,
+      "rank": 1,
       "retrieved": [
-        "data_quality_standards.md #3",
-        "incident_history.md #6",
-        "retail_pipeline_runbook.txt #12",
-        "incident_history.md #7"
+        "incident_history.md #12",
+        "data_quality_standards.md #5",
+        "incident_history.md #9",
+        "incident_history.md #10"
       ],
-      "top_score": 0.6795,
+      "top_score": 0.7583,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -416,12 +417,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "incident_history.md #6",
-        "incident_history.md #7",
-        "incident_history.md #5",
-        "incident_history.md #4"
+        "incident_history.md #13",
+        "incident_history.md #14",
+        "incident_history.md #10",
+        "incident_history.md #11"
       ],
-      "top_score": 0.6756,
+      "top_score": 0.7501,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -435,12 +436,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "incident_history.md #7",
-        "incident_history.md #6",
-        "retail_pipeline_runbook.txt #12",
-        "incident_history.md #5"
+        "incident_history.md #14",
+        "incident_history.md #13",
+        "incident_history.md #10",
+        "incident_history.md #9"
       ],
-      "top_score": 0.7003,
+      "top_score": 0.756,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -454,12 +455,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "incident_history.md #4",
-        "incident_history.md #7",
-        "incident_history.md #6",
-        "incident_history.md #5"
+        "incident_history.md #9",
+        "incident_history.md #13",
+        "incident_history.md #12",
+        "incident_history.md #14"
       ],
-      "top_score": 0.6824,
+      "top_score": 0.7731,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -473,12 +474,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "incident_history.md #5",
-        "incident_history.md #6",
-        "retail_pipeline_runbook.txt #13",
-        "incident_history.md #7"
+        "incident_history.md #11",
+        "incident_history.md #10",
+        "retail_pipeline_runbook.txt #29",
+        "incident_history.md #14"
       ],
-      "top_score": 0.6288,
+      "top_score": 0.6882,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -492,12 +493,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "onboarding_faq.md #9",
-        "onboarding_faq.md #10",
-        "data_quality_standards.md #1",
-        "onboarding_faq.md #8"
+        "onboarding_faq.md #18",
+        "retail_pipeline_runbook.txt #27",
+        "onboarding_faq.md #20",
+        "onboarding_faq.md #19"
       ],
-      "top_score": 0.6907,
+      "top_score": 0.7145,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -511,12 +512,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "onboarding_faq.md #9",
-        "onboarding_faq.md #8",
-        "incident_history.md #5",
-        "incident_history.md #4"
+        "onboarding_faq.md #19",
+        "onboarding_faq.md #18",
+        "onboarding_faq.md #15",
+        "incident_history.md #8"
       ],
-      "top_score": 0.6368,
+      "top_score": 0.6944,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -530,12 +531,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "onboarding_faq.md #10",
-        "onboarding_faq.md #9",
-        "onboarding_faq.md #8",
-        "incident_history.md #6"
+        "onboarding_faq.md #20",
+        "onboarding_faq.md #21",
+        "onboarding_faq.md #15",
+        "onboarding_faq.md #17"
       ],
-      "top_score": 0.7351,
+      "top_score": 0.752,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -549,12 +550,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "onboarding_faq.md #10",
-        "onboarding_faq.md #9",
-        "onboarding_faq.md #8",
+        "onboarding_faq.md #21",
+        "onboarding_faq.md #20",
+        "onboarding_faq.md #15",
         "data_quality_standards.md #1"
       ],
-      "top_score": 0.6293,
+      "top_score": 0.7003,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -568,12 +569,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "onboarding_faq.md #8",
-        "retail_pipeline_runbook.txt #13",
-        "onboarding_faq.md #9",
-        "onboarding_faq.md #10"
+        "onboarding_faq.md #16",
+        "onboarding_faq.md #17",
+        "retail_pipeline_runbook.txt #30",
+        "onboarding_faq.md #15"
       ],
-      "top_score": 0.7104,
+      "top_score": 0.7218,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -587,12 +588,12 @@
       "answerable": true,
       "rank": 1,
       "retrieved": [
-        "onboarding_faq.md #9",
-        "incident_history.md #5",
-        "retail_pipeline_runbook.txt #13",
-        "data_quality_standards.md #2"
+        "onboarding_faq.md #18",
+        "onboarding_faq.md #19",
+        "incident_history.md #10",
+        "incident_history.md #14"
       ],
-      "top_score": 0.7327,
+      "top_score": 0.7215,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -606,12 +607,12 @@
       "answerable": false,
       "rank": null,
       "retrieved": [
-        "incident_history.md #7",
-        "retail_pipeline_runbook.txt #12",
-        "data_quality_standards.md #3",
-        "data_quality_standards.md #2"
+        "incident_history.md #14",
+        "incident_history.md #13",
+        "onboarding_faq.md #15",
+        "retail_pipeline_runbook.txt #27"
       ],
-      "top_score": 0.6813,
+      "top_score": 0.6924,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -625,12 +626,12 @@
       "answerable": false,
       "rank": null,
       "retrieved": [
-        "retail_pipeline_runbook.txt #11",
-        "onboarding_faq.md #8",
-        "data_quality_standards.md #1",
-        "onboarding_faq.md #9"
+        "onboarding_faq.md #15",
+        "retail_pipeline_runbook.txt #23",
+        "data_quality_standards.md #6",
+        "retail_pipeline_runbook.txt #30"
       ],
-      "top_score": 0.5823,
+      "top_score": 0.6033,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -644,12 +645,12 @@
       "answerable": false,
       "rank": null,
       "retrieved": [
-        "onboarding_faq.md #9",
-        "retail_pipeline_runbook.txt #11",
-        "onboarding_faq.md #8",
-        "incident_history.md #6"
+        "onboarding_faq.md #15",
+        "incident_history.md #8",
+        "incident_history.md #12",
+        "incident_history.md #9"
       ],
-      "top_score": 0.5941,
+      "top_score": 0.5996,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -663,12 +664,12 @@
       "answerable": false,
       "rank": null,
       "retrieved": [
-        "onboarding_faq.md #9",
-        "onboarding_faq.md #8",
-        "onboarding_faq.md #10",
-        "data_quality_standards.md #3"
+        "onboarding_faq.md #16",
+        "data_quality_standards.md #7",
+        "onboarding_faq.md #15",
+        "data_quality_standards.md #6"
       ],
-      "top_score": 0.6584,
+      "top_score": 0.6185,
       "answer": null,
       "refused": null,
       "faithfulness": null,
@@ -682,12 +683,12 @@
       "answerable": false,
       "rank": null,
       "retrieved": [
-        "onboarding_faq.md #10",
-        "incident_history.md #6",
-        "incident_history.md #5",
-        "onboarding_faq.md #8"
+        "incident_history.md #13",
+        "onboarding_faq.md #20",
+        "retail_pipeline_runbook.txt #23",
+        "onboarding_faq.md #15"
       ],
-      "top_score": 0.6072,
+      "top_score": 0.5752,
       "answer": null,
       "refused": null,
       "faithfulness": null,

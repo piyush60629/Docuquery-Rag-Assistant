@@ -125,3 +125,85 @@ def test_answer_chain_uses_llm_and_handles_no_results(rag):
 def test_api_key_required_without_injected_models():
     with pytest.raises(ValueError):
         GeminiRAG(api_key="")
+
+
+RUNBOOK = """Pipeline Runbook
+
+Overview
+The pipeline loads sales data every night.
+
+Bronze Layer
+Raw files land here with a batch identifier.
+
+Failure Handling
+Engineers rerun the failed batch after approval.
+"""
+
+
+def test_split_sections_detects_plain_text_and_markdown_headings():
+    from rag_engine import split_sections
+
+    plain = split_sections(RUNBOOK)
+    assert [h for h, _ in plain] == [
+        "Pipeline Runbook > Overview",
+        "Pipeline Runbook > Bronze Layer",
+        "Pipeline Runbook > Failure Handling",
+    ]
+    assert plain[1][1] == "Raw files land here with a batch identifier."
+
+    markdown = split_sections("# Guide\nIntro text.\n\n## Setup\nInstall it.\n\n### Windows\nUse PowerShell.\n\n## Usage\nRun it.")
+    assert [h for h, _ in markdown] == ["Guide", "Guide > Setup", "Guide > Setup > Windows", "Guide > Usage"]
+
+
+def test_split_sections_does_not_treat_sentences_or_bullets_as_headings():
+    from rag_engine import split_sections
+
+    text = "Intro line that ends with a period.\n\n- Bullet item\nmore text\n\nShort sentence.\nNext line."
+    assert split_sections(text) == [("", text)]
+
+
+def test_section_strategy_keeps_topics_apart_and_prefixes_headings():
+    parts = [DocumentPart(source="runbook.txt", text=RUNBOOK)]
+    fixed = build_chunks(parts, chunk_size=300, overlap=50, strategy="fixed")
+    sections = build_chunks(parts, chunk_size=300, overlap=50, strategy="sections")
+    assert len(fixed) == 1  # the whole runbook fits one fixed-size chunk, mixing three topics
+    assert len(sections) == 3
+    assert sections[1].text.startswith("Pipeline Runbook > Bronze Layer\n")
+    assert sections[1].section == "Pipeline Runbook > Bronze Layer"
+    assert "rerun" not in sections[1].text
+    assert TextChunk.from_document(sections[1].to_document()) == sections[1]
+
+
+def test_long_sections_are_split_within_the_size_limit():
+    body = "Each sentence describes one more validation rule. " * 40
+    parts = [DocumentPart(source="rules.md", text=f"## Validation Rules\n{body}")]
+    chunks = build_chunks(parts, chunk_size=400, overlap=50, strategy="sections")
+    assert len(chunks) > 1
+    assert all(len(c.text) <= 400 for c in chunks)
+    assert all(c.text.startswith("Validation Rules\n") for c in chunks)
+
+
+def test_unknown_strategy_is_rejected():
+    with pytest.raises(ValueError):
+        build_chunks([DocumentPart(source="a.txt", text="x")], strategy="magic")
+
+
+def test_docx_headings_become_markdown_sections():
+    from io import BytesIO
+
+    from docx import Document as WordDocument
+
+    from document_loader import extract_docx
+    from rag_engine import split_sections
+
+    word = WordDocument()
+    word.add_heading("Onboarding Guide", level=0)
+    word.add_paragraph("Welcome to the team.")
+    word.add_heading("Access", level=1)
+    word.add_paragraph("Raise a request in the portal.")
+    buffer = BytesIO()
+    word.save(buffer)
+
+    parts = extract_docx(buffer.getvalue(), "guide.docx")
+    assert parts[0].text.startswith("# Onboarding Guide\n\nWelcome")
+    assert [h for h, _ in split_sections(parts[0].text)] == ["Onboarding Guide", "Onboarding Guide > Access"]

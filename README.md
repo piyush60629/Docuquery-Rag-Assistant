@@ -5,7 +5,7 @@ A deployable Retrieval-Augmented Generation (RAG) project built with **LangChain
 ## What this project demonstrates
 
 - Document text extraction (PDF, DOCX, TXT, Markdown)
-- Text cleaning and overlapping chunking with LangChain's `RecursiveCharacterTextSplitter`
+- **Section-aware chunking**: documents are split on their headings (Markdown, Word heading styles, and plain-text titles) before LangChain's `RecursiveCharacterTextSplitter` sizes them, and each chunk starts with its heading path so it carries its topic
 - Gemini text embeddings (`gemini-embedding-001`, 768 dimensions) via `langchain-google-genai`
 - **ChromaDB vector store** with cosine similarity search and chunk metadata (source file, page, chunk ID)
 - Grounded answer generation with a **LangChain (LCEL) chain**: prompt → Gemini → output parser
@@ -21,7 +21,7 @@ Uploaded files
     ↓
 Text extraction (pypdf, python-docx)
     ↓
-LangChain RecursiveCharacterTextSplitter → overlapping chunks + metadata
+Section split on headings → LangChain RecursiveCharacterTextSplitter → chunks with heading path + metadata
     ↓
 Gemini embeddings (langchain-google-genai)
     ↓
@@ -90,19 +90,30 @@ DocuQuery is evaluated on **35 questions** (`eval/dataset.json`) about the four 
 
 Evidence is matched by phrase rather than chunk ID, so results stay comparable when the chunk size changes.
 
+### Improvement log
+
+Measured on the same 35 questions, retrieval mode, top-k 4.
+
+| Change | Chunks | Hit@1 | Hit@4 | MRR |
+|---|---|---|---|---|
+| Baseline: fixed-size chunks (900 chars, 150 overlap) | 13 | 80.0% | 96.7% | 0.867 |
+| Section-aware chunking (split on headings, heading path in each chunk) | 30 | **96.7%** | **100.0%** | **0.983** |
+
+Five of the six baseline misses came from the plain-text runbook, where each fixed-size chunk mixed several topics (Bronze, Silver, incremental load). Splitting on headings keeps one topic per chunk. The one remaining Hit@1 miss (schema drift → quarantine) ranks the matching incident record first, which also describes the quarantine step.
+
 <!-- EVAL_RESULTS_START -->
 **Latest results**
 
-- Run: 2026-10-15 17:40 UTC  
-- Mode: retrieval · chunk size 900 · overlap 150 · top-k 4  
+- Run: 2026-10-17 14:25 UTC  
+- Mode: retrieval · chunking sections · chunk size 900 · overlap 150 · top-k 4  
 - Models: embeddings `gemini-embedding-001`, answers `gemini-3.5-flash`, judge ``  
-- Questions: 35 (30 answerable, 5 unanswerable) · chunks indexed: 13 · errors: 0
+- Questions: 35 (30 answerable, 5 unanswerable) · chunks indexed: 30 · errors: 0
 
 | Metric | Score |
 |---|---|
-| Retrieval Hit@1 | 80.0% |
-| Retrieval Hit@4 | 96.7% |
-| Retrieval MRR | 0.867 |
+| Retrieval Hit@1 | 96.7% |
+| Retrieval Hit@4 | 100.0% |
+| Retrieval MRR | 0.983 |
 
 Full per-question results: `eval/results/latest.md`.
 <!-- EVAL_RESULTS_END -->
@@ -116,6 +127,7 @@ export GEMINI_API_KEY=your_key            # Windows PowerShell: $env:GEMINI_API_
 python evaluate.py --mode retrieval       # retrieval metrics only, fast
 python evaluate.py --mode full            # adds answers + LLM-as-judge scores (~8 minutes on the free tier)
 python evaluate.py --mode full --chunk-size 600 --label "smaller chunks"   # compare a configuration
+python evaluate.py --mode retrieval --chunking fixed --label "fixed-size"   # the original chunking, for comparison
 ```
 
 Every run adds a row to `eval/results/history.csv`, so configurations can be compared before and after a change.
