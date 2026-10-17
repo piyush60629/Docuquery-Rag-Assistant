@@ -90,6 +90,17 @@ DocuQuery is evaluated on **35 questions** (`eval/dataset.json`) about the four 
 
 Evidence is matched by phrase rather than chunk ID, so results stay comparable when the chunk size changes.
 
+### Improvement log
+
+Measured on the same 35 questions, retrieval mode, top-k 4.
+
+| Change | Chunks | Hit@1 | Hit@4 | MRR |
+|---|---|---|---|---|
+| Baseline: fixed-size chunks (900 chars, 150 overlap) | 13 | 80.0% | 96.7% | 0.867 |
+| Section-aware chunking (split on headings, heading path in each chunk) | 30 | **96.7%** | **100.0%** | **0.983** |
+
+Five of the six baseline misses came from the plain-text runbook, where each fixed-size chunk mixed several topics (Bronze, Silver, incremental load). Splitting on headings keeps one topic per chunk. The one remaining Hit@1 miss (schema drift → quarantine) ranks the matching incident record first, which also describes the quarantine step.
+
 <!-- EVAL_RESULTS_START -->
 **Latest results**
 
