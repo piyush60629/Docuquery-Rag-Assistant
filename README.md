@@ -93,16 +93,16 @@ Evidence is matched by phrase rather than chunk ID, so results stay comparable w
 <!-- EVAL_RESULTS_START -->
 **Latest results**
 
-- Run: 2026-10-15 17:40 UTC  
-- Mode: retrieval · chunk size 900 · overlap 150 · top-k 4  
+- Run: 2026-10-17 14:25 UTC  
+- Mode: retrieval · chunking sections · chunk size 900 · overlap 150 · top-k 4  
 - Models: embeddings `gemini-embedding-001`, answers `gemini-3.5-flash`, judge ``  
-- Questions: 35 (30 answerable, 5 unanswerable) · chunks indexed: 13 · errors: 0
+- Questions: 35 (30 answerable, 5 unanswerable) · chunks indexed: 30 · errors: 0
 
 | Metric | Score |
 |---|---|
-| Retrieval Hit@1 | 80.0% |
-| Retrieval Hit@4 | 96.7% |
-| Retrieval MRR | 0.867 |
+| Retrieval Hit@1 | 96.7% |
+| Retrieval Hit@4 | 100.0% |
+| Retrieval MRR | 0.983 |
 
 Full per-question results: `eval/results/latest.md`.
 <!-- EVAL_RESULTS_END -->
