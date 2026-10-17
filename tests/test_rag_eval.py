@@ -66,11 +66,13 @@ def test_dataset_is_well_formed(dataset):
     assert all(not c.evidence for c in cases if not c.answerable)
 
 
-def test_every_evidence_phrase_fits_inside_one_chunk(dataset, corpus_parts):
+@pytest.mark.parametrize("strategy,chunk_size", [("fixed", 900), ("sections", 900), ("sections", 500)])
+def test_every_evidence_phrase_fits_inside_one_chunk(dataset, corpus_parts, strategy, chunk_size):
     """If evidence never appears inside a single chunk, retrieval could never score a hit."""
 
     _, cases = dataset
-    chunks = [normalize(c.text) for c in build_chunks(corpus_parts, chunk_size=900, overlap=150)]
+    built = build_chunks(corpus_parts, chunk_size=chunk_size, overlap=150, strategy=strategy)
+    chunks = [normalize(c.text) for c in built]
     for case in cases:
         if case.answerable:
             assert any(normalize(p) in chunk for p in case.evidence for chunk in chunks), case.id
@@ -215,3 +217,20 @@ def test_single_error_does_not_stop_the_run(dataset, corpus_parts):
     results, summary, _ = run_evaluation(rag, cases, corpus_parts, mode="retrieval", sleep=lambda _: None, log=lambda _: None)
     assert len(results) == len(cases)
     assert summary["errors"] == 1 and summary["stopped_early"] is None
+
+
+def test_history_file_is_upgraded_when_columns_change(tmp_path):
+    from evaluate import HISTORY_FIELDS
+
+    old = tmp_path / "history.csv"
+    old.write_text(
+        "timestamp,label,mode,chunk_size,overlap,top_k,chunks,cases,errors,hit_at_1,hit_at_k,mrr\n"
+        "2026-10-15 17:40 UTC,baseline,retrieval,900,150,4,13,35,0,0.8,0.9667,0.8667\n",
+        encoding="utf-8",
+    )
+    summary = {"cases": 1, "answerable_cases": 1, "unanswerable_cases": 0, "errors": 0, "hit_at_1": 1.0, "hit_at_4": 1.0, "mrr": 1.0}
+    config = {"timestamp": "t", "label": "new", "mode": "retrieval", "chunking": "sections", "chunk_size": 900, "overlap": 150, "top_k": 4, "chunks": 30}
+    write_outputs(tmp_path, [], summary, config)
+    rows = list(csv.DictReader(old.open()))
+    assert list(rows[0].keys()) == HISTORY_FIELDS
+    assert [(r["label"], r["chunking"], r["hit_at_1"]) for r in rows] == [("baseline", "fixed", "0.8"), ("new", "sections", "1.0")]

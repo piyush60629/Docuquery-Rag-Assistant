@@ -28,6 +28,8 @@ from langchain_core.output_parsers import StrOutputParser
 
 from document_loader import DocumentPart, load_paths, supported_files_in
 from rag_engine import (
+    CHUNKING_STRATEGIES,
+    DEFAULT_CHUNKING,
     DEFAULT_EMBEDDING_MODEL,
     DEFAULT_GENERATION_MODEL,
     GeminiRAG,
@@ -52,7 +54,7 @@ RETRYABLE_MARKERS = ("429", "resource_exhausted", "quota", "rate limit", "503", 
 DAILY_QUOTA_MARKERS = ("perday", "per_day", "per day", "daily")
 MAX_CONSECUTIVE_ERRORS = 3
 HISTORY_FIELDS = [
-    "timestamp", "label", "mode", "chunk_size", "overlap", "top_k", "chunks", "cases", "errors",
+    "timestamp", "label", "mode", "chunking", "chunk_size", "overlap", "top_k", "chunks", "cases", "errors",
     "hit_at_1", "hit_at_k", "mrr", "faithfulness", "answer_correctness", "refusal_accuracy", "false_refusal_rate",
 ]
 
@@ -119,6 +121,7 @@ def run_evaluation(
     chunk_size: int = 900,
     overlap: int = 150,
     top_k: int = 4,
+    chunking: str = DEFAULT_CHUNKING,
     judge: BaseChatModel | None = None,
     delay: float = 0.0,
     sleep: Callable[[float], None] = time.sleep,
@@ -132,7 +135,7 @@ def run_evaluation(
     if mode == "full" and judge is None:
         raise ValueError("full mode needs a judge model")
 
-    chunks = build_chunks(parts, chunk_size=chunk_size, overlap=overlap)
+    chunks = build_chunks(parts, chunk_size=chunk_size, overlap=overlap, strategy=chunking)
     log(f"Indexing {len(chunks)} chunks from {len({c.source for c in chunks})} documents...")
     index = with_retries(lambda: rag.build_index(chunks), sleep=sleep)
 
@@ -215,6 +218,18 @@ def write_outputs(
     (output_dir / "latest.md").write_text(markdown, encoding="utf-8")
 
     history = output_dir / "history.csv"
+    if history.exists():
+        with history.open(newline="", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            old_fields, old_rows = reader.fieldnames or [], list(reader)
+        if old_fields != HISTORY_FIELDS:
+            # Columns were added in a later version: rewrite the file with the new header.
+            # Runs recorded before the "chunking" column existed all used fixed-size chunking.
+            with history.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=HISTORY_FIELDS, extrasaction="ignore")
+                writer.writeheader()
+                for old in old_rows:
+                    writer.writerow({"chunking": "fixed", **{k: v for k, v in old.items() if v not in (None, "")}})
     is_new = not history.exists()
     row = {**{k: config.get(k) for k in HISTORY_FIELDS}, **summary}
     row["hit_at_k"] = summary.get(f"hit_at_{config['top_k']}")
@@ -248,6 +263,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dataset", default="eval/dataset.json")
     parser.add_argument("--mode", choices=["retrieval", "full"], default="full")
+    parser.add_argument("--chunking", choices=list(CHUNKING_STRATEGIES), default=DEFAULT_CHUNKING)
     parser.add_argument("--chunk-size", type=int, default=900)
     parser.add_argument("--overlap", type=int, default=150)
     parser.add_argument("--top-k", type=int, default=4)
@@ -299,6 +315,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             chunk_size=args.chunk_size,
             overlap=args.overlap,
             top_k=args.top_k,
+            chunking=args.chunking,
             judge=judge,
             delay=args.delay if args.mode == "full" else 0.0,
         )
@@ -311,6 +328,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         "label": args.label,
         "mode": args.mode,
+        "chunking": args.chunking,
         "chunk_size": args.chunk_size,
         "overlap": args.overlap,
         "top_k": args.top_k,

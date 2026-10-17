@@ -5,7 +5,7 @@ A deployable Retrieval-Augmented Generation (RAG) project built with **LangChain
 ## What this project demonstrates
 
 - Document text extraction (PDF, DOCX, TXT, Markdown)
-- Text cleaning and overlapping chunking with LangChain's `RecursiveCharacterTextSplitter`
+- **Section-aware chunking**: documents are split on their headings (Markdown, Word heading styles, and plain-text titles) before LangChain's `RecursiveCharacterTextSplitter` sizes them, and each chunk starts with its heading path so it carries its topic
 - Gemini text embeddings (`gemini-embedding-001`, 768 dimensions) via `langchain-google-genai`
 - **ChromaDB vector store** with cosine similarity search and chunk metadata (source file, page, chunk ID)
 - Grounded answer generation with a **LangChain (LCEL) chain**: prompt → Gemini → output parser
@@ -21,7 +21,7 @@ Uploaded files
     ↓
 Text extraction (pypdf, python-docx)
     ↓
-LangChain RecursiveCharacterTextSplitter → overlapping chunks + metadata
+Section split on headings → LangChain RecursiveCharacterTextSplitter → chunks with heading path + metadata
     ↓
 Gemini embeddings (langchain-google-genai)
     ↓
@@ -116,6 +116,7 @@ export GEMINI_API_KEY=your_key            # Windows PowerShell: $env:GEMINI_API_
 python evaluate.py --mode retrieval       # retrieval metrics only, fast
 python evaluate.py --mode full            # adds answers + LLM-as-judge scores (~8 minutes on the free tier)
 python evaluate.py --mode full --chunk-size 600 --label "smaller chunks"   # compare a configuration
+python evaluate.py --mode retrieval --chunking fixed --label "fixed-size"   # the original chunking, for comparison
 ```
 
 Every run adds a row to `eval/results/history.csv`, so configurations can be compared before and after a change.

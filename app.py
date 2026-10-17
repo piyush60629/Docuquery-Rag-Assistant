@@ -88,10 +88,16 @@ def app_header() -> None:
     )
 
 
-def sidebar(api_key_ready: bool) -> tuple[int, int, int]:
+def sidebar(api_key_ready: bool) -> tuple[str, int, int, int]:
     with st.sidebar:
         st.header("Project controls")
         st.success("Gemini API connected" if api_key_ready else "Add a Gemini API key")
+        chunking_label = st.radio(
+            "Chunking strategy",
+            ["By section (recommended)", "Fixed size"],
+            help="By section splits on document headings first, so each chunk covers one topic.",
+        )
+        chunking = "sections" if chunking_label.startswith("By section") else "fixed"
         chunk_size = st.slider("Chunk size", 500, 1400, 900, 100)
         overlap = st.slider("Chunk overlap", 50, 300, 150, 50)
         top_k = st.slider("Sources per answer", 2, 6, 4)
@@ -99,7 +105,7 @@ def sidebar(api_key_ready: bool) -> tuple[int, int, int]:
         st.markdown(
             "**RAG flow**\n\n"
             "1. Extract text\n"
-            "2. Split into chunks (LangChain text splitter)\n"
+            "2. Split by section headings, then into chunks (LangChain text splitter)\n"
             "3. Create Gemini embeddings\n"
             "4. Store vectors in ChromaDB\n"
             "5. Retrieve similar chunks (cosine similarity)\n"
@@ -111,7 +117,7 @@ def sidebar(api_key_ready: bool) -> tuple[int, int, int]:
         if st.button("Clear documents and chat", use_container_width=True):
             reset_index()
             st.rerun()
-    return chunk_size, overlap, top_k
+    return chunking, chunk_size, overlap, top_k
 
 
 def main() -> None:
@@ -120,7 +126,7 @@ def main() -> None:
     app_header()
 
     api_key = get_api_key()
-    chunk_size, overlap, top_k = sidebar(bool(api_key))
+    chunking, chunk_size, overlap, top_k = sidebar(bool(api_key))
 
     uploaded_files = st.file_uploader(
         "Upload up to five files",
@@ -157,7 +163,7 @@ def main() -> None:
                         raise ValueError("No readable text was found in the selected files.")
 
                     st.write("Splitting text into chunks")
-                    chunks = build_chunks(parts, chunk_size=chunk_size, overlap=overlap)
+                    chunks = build_chunks(parts, chunk_size=chunk_size, overlap=overlap, strategy=chunking)
                     if not chunks:
                         raise ValueError("No searchable chunks could be created.")
 
