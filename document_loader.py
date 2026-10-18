@@ -43,8 +43,21 @@ def extract_pdf(data: bytes, source: str) -> list[DocumentPart]:
 
 def extract_docx(data: bytes, source: str) -> list[DocumentPart]:
     document = Document(BytesIO(data))
-    paragraphs = [paragraph.text.strip() for paragraph in document.paragraphs]
-    text = "\n".join(paragraph for paragraph in paragraphs if paragraph)
+    blocks: list[str] = []
+    for paragraph in document.paragraphs:
+        text = paragraph.text.strip()
+        if not text:
+            continue
+        style = (paragraph.style.name if paragraph.style is not None else "") or ""
+        # Keep Word headings as Markdown headings so section-aware chunking can use them.
+        if style == "Title":
+            text = f"# {text}"
+        elif style.startswith("Heading"):
+            level = style.removeprefix("Heading").strip()
+            depth = min(int(level) + 1, 6) if level.isdigit() else 2
+            text = f"{'#' * depth} {text}"
+        blocks.append(text)
+    text = "\n\n".join(blocks)
     return [DocumentPart(source=source, text=text)] if text else []
 
 

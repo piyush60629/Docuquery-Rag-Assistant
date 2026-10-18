@@ -11,6 +11,11 @@ on:
         type: choice
         options: [retrieval, full]
         default: retrieval
+      chunking:
+        description: "sections = split on headings first (default), fixed = size only (original)"
+        type: choice
+        options: [sections, fixed]
+        default: sections
       chunk_size:
         description: "Chunk size in characters"
         default: "900"
@@ -57,6 +62,7 @@ jobs:
           PYTHONUNBUFFERED: "1"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MODE: ${{ inputs.mode }}
+          CHUNKING: ${{ inputs.chunking }}
           CHUNK_SIZE: ${{ inputs.chunk_size }}
           OVERLAP: ${{ inputs.overlap }}
           TOP_K: ${{ inputs.top_k }}
@@ -67,7 +73,7 @@ jobs:
             exit 1
           fi
           set -o pipefail
-          if ! python evaluate.py --mode "$MODE" --chunk-size "$CHUNK_SIZE" --overlap "$OVERLAP" --top-k "$TOP_K" --label "$LABEL" --update-readme 2>&1 | tee eval-output.log; then
+          if ! python evaluate.py --mode "$MODE" --chunking "$CHUNKING" --chunk-size "$CHUNK_SIZE" --overlap "$OVERLAP" --top-k "$TOP_K" --label "$LABEL" --update-readme 2>&1 | tee eval-output.log; then
             reason=$(grep -E "Stopped after|could not start|Gemini|Error" eval-output.log | tail -2 | tr '\n' ' ')
             echo "::error title=Evaluation failed::${reason:-See the Run evaluation log for details.}"
             exit 1

@@ -235,7 +235,7 @@ def render_markdown(summary: dict[str, Any], results: Sequence[CaseResult], conf
         "# DocuQuery evaluation results",
         "",
         f"- Run: {config.get('timestamp', '')}  ",
-        f"- Mode: {config['mode']} · chunk size {config['chunk_size']} · overlap {config['overlap']} · top-k {top_k}  ",
+        f"- Mode: {config['mode']} · chunking {config.get('chunking', 'fixed')} · chunk size {config['chunk_size']} · overlap {config['overlap']} · top-k {top_k}  ",
         f"- Models: embeddings `{config.get('embedding_model', '')}`, answers `{config.get('generation_model', '')}`, judge `{config.get('judge_model', '')}`  ",
         f"- Questions: {summary['cases']} ({summary['answerable_cases']} answerable, "
         f"{summary['unanswerable_cases']} unanswerable) · chunks indexed: {config.get('chunks', '')} · errors: {summary['errors']}",

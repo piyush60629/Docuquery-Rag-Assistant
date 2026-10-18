@@ -1,12 +1,13 @@
 """Core Retrieval-Augmented Generation logic.
 
 Pipeline:
-    DocumentPart -> LangChain RecursiveCharacterTextSplitter -> Gemini embeddings
-    -> ChromaDB vector store -> similarity search -> LangChain (LCEL) answer chain
+    DocumentPart -> section-aware chunking (headings + LangChain RecursiveCharacterTextSplitter)
+    -> Gemini embeddings -> ChromaDB vector store -> similarity search -> LangChain (LCEL) answer chain
 """
 
 from __future__ import annotations
 
+import re
 import sqlite3
 import sys
 import threading
@@ -35,6 +36,9 @@ EMBEDDING_BATCH_SIZE = 50  # keeps each Gemini embedding request small on the fr
 
 NOT_FOUND_MESSAGE = "I could not find that information in the uploaded documents."
 
+CHUNKING_STRATEGIES = ("sections", "fixed")
+DEFAULT_CHUNKING = "sections"
+
 
 # --------------------------------------------------------------------------- #
 # Data classes
@@ -47,6 +51,7 @@ class TextChunk:
     text: str
     page: int | None
     chunk_id: int
+    section: str | None = None  # heading path, e.g. "Data Quality Standards > Thresholds"
 
     @property
     def label(self) -> str:
@@ -58,6 +63,8 @@ class TextChunk:
         metadata: dict[str, Any] = {"source": self.source, "chunk_id": self.chunk_id}
         if self.page is not None:
             metadata["page"] = self.page
+        if self.section:
+            metadata["section"] = self.section
         return Document(page_content=self.text, metadata=metadata)
 
     @classmethod
@@ -68,6 +75,7 @@ class TextChunk:
             text=document.page_content,
             page=metadata.get("page"),
             chunk_id=int(metadata.get("chunk_id", 0)),
+            section=metadata.get("section"),
         )
 
 
@@ -113,14 +121,116 @@ def chunk_text(text: str, chunk_size: int = 900, overlap: int = 150) -> list[str
     return [chunk for chunk in splitter.split_text(normalized) if chunk.strip()]
 
 
+# --------------------------------------------------------------------------- #
+# Section-aware chunking
+# --------------------------------------------------------------------------- #
+
+MARKDOWN_HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*#*$")
+MIN_HEADER_BUDGET = 200  # never let a long heading path squeeze the body below this
+
+
+def _looks_like_plain_heading(line: str) -> bool:
+    """A short title-like line such as 'Bronze Layer' or 'Failure Handling'."""
+
+    text = line.strip()
+    if not text or len(text) > 60 or len(text.split()) > 8:
+        return False
+    if text[0] in "-*•>|" or text[-1] in ".,;:!?)\"'":
+        return False
+    return text[0].isupper() or text[0].isdigit()
+
+
+def split_sections(text: str) -> list[tuple[str, str]]:
+    """Split text into (heading path, body) sections.
+
+    Recognises Markdown headings (# / ## / ###, nested into a path) and plain-text
+    headings: a short title-like line after a blank line, followed by text. A short
+    first line followed by a blank line is treated as the document title.
+    Text without headings comes back as one section with an empty heading path.
+    """
+
+    lines = [" ".join(line.split()) for line in text.splitlines()]
+    sections: list[tuple[str, str]] = []
+    stack: list[tuple[int, str]] = []
+    body: list[str] = []
+
+    def flush() -> None:
+        content = re.sub(r"\n{3,}", "\n\n", "\n".join(body)).strip()
+        if content:
+            sections.append((" > ".join(title for _, title in stack), content))
+        body.clear()
+
+    for index, line in enumerate(lines):
+        previous_blank = index == 0 or not lines[index - 1]
+        next_line = lines[index + 1] if index + 1 < len(lines) else ""
+        level, title = 0, ""
+
+        markdown = MARKDOWN_HEADING.match(line)
+        if markdown:
+            level, title = len(markdown.group(1)), markdown.group(2).strip()
+        elif _looks_like_plain_heading(line) and previous_blank:
+            if next_line:
+                level, title = 2, line
+            elif index == 0:
+                level, title = 1, line  # document title
+
+        if title:
+            flush()
+            while stack and stack[-1][0] >= level:
+                stack.pop()
+            stack.append((level, title))
+        else:
+            body.append(line)
+
+    flush()
+    return sections
+
+
+def section_chunks(text: str, chunk_size: int = 900, overlap: int = 150) -> list[tuple[str, str]]:
+    """Chunk each section separately so no chunk mixes two topics.
+
+    Every chunk starts with its heading path, which gives the embedding (and the LLM)
+    the topic even when the body text never repeats it. Returns (section, chunk text).
+    """
+
+    results: list[tuple[str, str]] = []
+    for heading, body in split_sections(text):
+        header = f"{heading}\n" if heading else ""
+        budget = max(MIN_HEADER_BUDGET, chunk_size - len(header))
+        splitter = make_text_splitter(budget, min(overlap, budget // 2))
+        for piece in splitter.split_text(body):
+            if piece.strip():
+                results.append((heading, f"{header}{piece.strip()}"))
+    return results
+
+
 def build_chunks(
-    parts: Iterable[DocumentPart], chunk_size: int = 900, overlap: int = 150
+    parts: Iterable[DocumentPart],
+    chunk_size: int = 900,
+    overlap: int = 150,
+    strategy: str = DEFAULT_CHUNKING,
 ) -> list[TextChunk]:
+    """Turn extracted document parts into chunks.
+
+    strategy="sections": split on headings first, then by size (default).
+    strategy="fixed":    size-based splitting only (the original approach, kept for comparison).
+    """
+
+    if strategy not in CHUNKING_STRATEGIES:
+        raise ValueError(f"strategy must be one of {CHUNKING_STRATEGIES}")
+    make_text_splitter(chunk_size, overlap)  # validate settings once, for both strategies
+
     chunks: list[TextChunk] = []
     chunk_id = 1
     for part in parts:
-        for text in chunk_text(part.text, chunk_size=chunk_size, overlap=overlap):
-            chunks.append(TextChunk(source=part.source, text=text, page=part.page, chunk_id=chunk_id))
+        if strategy == "fixed":
+            pieces = [("", text) for text in chunk_text(part.text, chunk_size=chunk_size, overlap=overlap)]
+        else:
+            pieces = section_chunks(part.text, chunk_size=chunk_size, overlap=overlap)
+        for section, text in pieces:
+            chunks.append(
+                TextChunk(source=part.source, text=text, page=part.page, chunk_id=chunk_id, section=section or None)
+            )
             chunk_id += 1
     return chunks
 
