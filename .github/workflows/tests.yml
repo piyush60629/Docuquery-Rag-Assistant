@@ -25,3 +25,43 @@ jobs:
 
       - name: Run tests (offline, no API key needed)
         run: python -m pytest -q
+
+  docker:
+    name: docker build and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t docuquery-rag:ci .
+
+      - name: Start API container
+        run: docker run -d --name docuquery -p 8000:8000 -e GEMINI_API_KEY=dummy-key-for-smoke-test docuquery-rag:ci
+
+      - name: Check /health and /docs respond
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health; then echo; break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:8000/health | grep -q '"status":"ok"'
+          curl -fsS -o /dev/null http://localhost:8000/docs
+          curl -fsS http://localhost:8000/openapi.json | grep -q '/indexes/{index_id}/query'
+          echo "API container is healthy."
+
+      - name: Check the Streamlit UI starts from the same image
+        run: |
+          docker run -d --name docuquery-ui -p 8501:8501 docuquery-rag:ci \
+            streamlit run app.py --server.address=0.0.0.0 --server.port=8501 --server.headless=true
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8501/_stcore/health; then echo; exit 0; fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Container logs
+        if: always()
+        run: |
+          docker logs docuquery || true
+          docker logs docuquery-ui || true
