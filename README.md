@@ -1,6 +1,6 @@
 # DocuQuery RAG Assistant
 
-A deployable Retrieval-Augmented Generation (RAG) project built with **LangChain**, **ChromaDB**, and **Gemini**. Users upload PDF, DOCX, TXT, or Markdown documents and ask questions. The app stores document embeddings in a ChromaDB vector store, retrieves the most relevant chunks, and asks Gemini to answer only from those chunks, with source citations and similarity scores.
+A deployable Retrieval-Augmented Generation (RAG) project built with **LangChain**, **ChromaDB**, **Gemini embeddings**, and **open-source LLMs (Llama 3.3 70B) served by Groq**. Users upload PDF, DOCX, TXT, or Markdown documents and ask questions. The app stores document embeddings in a ChromaDB vector store, retrieves the most relevant chunks, and asks the LLM to answer only from those chunks, with source citations and similarity scores.
 
 ## What this project demonstrates
 
@@ -8,7 +8,8 @@ A deployable Retrieval-Augmented Generation (RAG) project built with **LangChain
 - **Section-aware chunking**: documents are split on their headings (Markdown, Word heading styles, and plain-text titles) before LangChain's `RecursiveCharacterTextSplitter` sizes them, and each chunk starts with its heading path so it carries its topic
 - Gemini text embeddings (`gemini-embedding-001`, 768 dimensions) via `langchain-google-genai`
 - **ChromaDB vector store** with cosine similarity search and chunk metadata (source file, page, chunk ID)
-- Grounded answer generation with a **LangChain (LCEL) chain**: prompt → Gemini → output parser
+- Grounded answer generation with a **LangChain (LCEL) chain**: prompt → LLM → output parser
+- **Multiple LLM providers**: answers from the open-source Llama 3.3 70B on Groq by default, or Gemini, switched with one setting
 - Source passage display with similarity scores
 - Per-session isolation: every user session gets its own ChromaDB collection
 - **RAG evaluation**: retrieval Hit@k and MRR, LLM-as-judge faithfulness and correctness, and refusal accuracy on unanswerable questions
@@ -31,7 +32,7 @@ ChromaDB collection (one per session, cosine distance)
     ↓
 Question embedding → ChromaDB similarity search → top-k chunks
     ↓
-LangChain LCEL chain: prompt | Gemini | StrOutputParser
+LangChain LCEL chain: prompt | Llama 3.3 70B on Groq (or Gemini) | StrOutputParser
     ↓
 Grounded answer + cited source passages
 ```
@@ -39,7 +40,7 @@ Grounded answer + cited source passages
 ## Free resources
 
 - **App hosting:** Streamlit Community Cloud
-- **Generation model:** Gemini Flash free tier
+- **Answer model:** Llama 3.3 70B on the Groq free tier (Gemini Flash as an alternative)
 - **Embedding model:** Gemini Embedding free tier
 - **Vector store:** ChromaDB, running in memory inside the app (no external database needed)
 - **Orchestration:** LangChain
@@ -95,6 +96,7 @@ pip install -r requirements.txt
 
 ```toml
 GEMINI_API_KEY = "your_api_key"
+GROQ_API_KEY = "your_groq_key"   # optional: free at console.groq.com; without it, Gemini writes the answers
 # APP_PASSWORD = "optional_demo_password"
 ```
 
@@ -119,7 +121,7 @@ DocuQuery is evaluated on **35 questions** (`eval/dataset.json`) about the four 
 |---|---|
 | Retrieval Hit@1 / Hit@k | Share of answerable questions where a chunk containing the evidence is ranked first / in the top k |
 | Retrieval MRR | Mean reciprocal rank of the first chunk with the evidence |
-| Answer faithfulness | LLM judge: are all claims in the answer supported by the retrieved passages? |
+| Answer faithfulness | LLM judge (gpt-oss-120b, a different model from the one answering): are all claims in the answer supported by the retrieved passages? |
 | Answer correctness | LLM judge: does the answer match the reference answer? |
 | Refusal accuracy | Share of unanswerable questions where the assistant declines instead of guessing |
 | False refusal rate | Share of answerable questions where it wrongly declines (lower is better) |
@@ -178,6 +180,7 @@ Every run adds a row to `eval/results/history.csv`, so configurations can be com
 
 ```toml
 GEMINI_API_KEY = "your_api_key"
+GROQ_API_KEY = "your_groq_key"
 # APP_PASSWORD = "optional_demo_password"
 ```
 

@@ -32,9 +32,13 @@ from rag_engine import (
     DEFAULT_CHUNKING,
     DEFAULT_EMBEDDING_MODEL,
     DEFAULT_GENERATION_MODEL,
+    DEFAULT_GROQ_JUDGE_MODEL,
+    LLM_PROVIDERS,
     GeminiRAG,
     build_chunks,
     format_context,
+    make_chat_model,
+    resolve_llm_provider,
 )
 from rag_eval import (
     JUDGE_SYSTEM_PROMPT,
@@ -54,7 +58,7 @@ RETRYABLE_MARKERS = ("429", "resource_exhausted", "quota", "rate limit", "503", 
 DAILY_QUOTA_MARKERS = ("perday", "per_day", "per day", "daily")
 MAX_CONSECUTIVE_ERRORS = 3
 HISTORY_FIELDS = [
-    "timestamp", "label", "mode", "chunking", "chunk_size", "overlap", "top_k", "chunks", "cases", "errors",
+    "timestamp", "label", "mode", "llm_provider", "chunking", "chunk_size", "overlap", "top_k", "chunks", "cases", "errors",
     "hit_at_1", "hit_at_k", "mrr", "faithfulness", "answer_correctness", "refusal_accuracy", "false_refusal_rate",
 ]
 
@@ -71,13 +75,13 @@ def explain_error(message: str) -> str:
 
     lowered = message.lower()
     if is_daily_quota_error(message):
-        return "The Gemini free-tier daily quota is used up. Try again tomorrow, or run --mode retrieval (far fewer calls)."
+        return "The LLM provider's free-tier daily quota is used up. Try again tomorrow, or run --mode retrieval (far fewer calls)."
     if "429" in lowered or "resource_exhausted" in lowered or "rate limit" in lowered:
-        return "Gemini is rate limiting requests. Run again with a larger --delay, or use --mode retrieval."
-    if "api key not valid" in lowered or "api_key_invalid" in lowered or "permission" in lowered or "401" in lowered or "403" in lowered:
-        return "The Gemini API key was rejected. Check the GEMINI_API_KEY secret."
-    if "not found" in lowered or "404" in lowered:
-        return "A Gemini model name was not found. Check the model names in rag_engine.py."
+        return "The LLM provider is rate limiting requests. Run again with a larger --delay, or use --mode retrieval."
+    if any(marker in lowered for marker in ("api key not valid", "api_key_invalid", "invalid api key", "permission", "401", "403")):
+        return "An API key was rejected. Check the GEMINI_API_KEY and GROQ_API_KEY secrets."
+    if "not found" in lowered or "404" in lowered or "decommissioned" in lowered:
+        return "A model name was not found or has been retired. Check the model names in rag_engine.py."
     return "Unexpected error; see the message above."
 
 
@@ -268,6 +272,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--overlap", type=int, default=150)
     parser.add_argument("--top-k", type=int, default=4)
     parser.add_argument("--delay", type=float, default=6.0, help="Seconds to wait between LLM calls (free tier).")
+    parser.add_argument(
+        "--llm-provider",
+        choices=list(LLM_PROVIDERS),
+        default=None,
+        help="Who writes and grades answers. Default: groq when GROQ_API_KEY is set, otherwise gemini.",
+    )
+    parser.add_argument("--answer-model", default=None, help="Override the answer model name.")
+    parser.add_argument("--judge-model", default=None, help="Override the judge model name.")
     parser.add_argument("--label", default="", help="Short note stored in history.csv, e.g. 'baseline'.")
     parser.add_argument("--output-dir", default="eval/results")
     parser.add_argument("--update-readme", action="store_true", help="Write the summary table into README.md.")
@@ -290,22 +302,42 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     # Retries are handled once, in with_retries(). The SDK's own retries are turned off so
     # they do not stack on top (6 SDK retries x 5 script retries made one bad call take minutes).
-    rag = GeminiRAG(api_key=api_key, max_retries=0, request_timeout=60)
-    judge = None
-    if args.mode == "full":
-        from langchain_google_genai import ChatGoogleGenerativeAI
+    groq_key = os.getenv("GROQ_API_KEY", "")
+    provider = resolve_llm_provider(args.llm_provider, groq_key)
+    llm_key = groq_key if provider == "groq" else api_key
+    if args.mode == "full" and not llm_key:
+        print("Set GROQ_API_KEY first (or use --llm-provider gemini).", file=sys.stderr)
+        return 2
 
-        judge = ChatGoogleGenerativeAI(
-            model=DEFAULT_GENERATION_MODEL,
-            google_api_key=api_key,
+    # Retrieval mode never calls the answer model, so a missing Groq key is fine there.
+    rag = GeminiRAG(
+        api_key=api_key,
+        max_retries=0,
+        request_timeout=60,
+        llm_provider=provider if llm_key else "gemini",
+        llm_api_key=groq_key,
+        generation_model=args.answer_model,
+    )
+    judge = None
+    judge_model = ""
+    if args.mode == "full":
+        # A different model grades the answers, so the answer model is not marking its own work.
+        judge_model = args.judge_model or (DEFAULT_GROQ_JUDGE_MODEL if provider == "groq" else DEFAULT_GENERATION_MODEL)
+        judge = make_chat_model(
+            provider,
+            llm_key,
+            judge_model,
             temperature=0,
-            max_output_tokens=300,
+            max_tokens=1024 if provider == "groq" else 300,
             max_retries=0,
             timeout=60,
         )
 
-    calls = len(cases) * (3 if args.mode == "full" else 1)
-    print(f"Mode: {args.mode} | {len(cases)} questions | about {calls} Gemini calls")
+    print(f"Mode: {args.mode} | {len(cases)} questions | search: Gemini embeddings", end="")
+    if args.mode == "full":
+        print(f" | answers: {rag.generation_model} | judge: {judge_model} ({provider}) | about {len(cases) * 2} LLM calls")
+    else:
+        print(f" | about {len(cases)} embedding calls")
     try:
         results, summary, chunk_count = run_evaluation(
             rag,
@@ -334,9 +366,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "top_k": args.top_k,
         "chunks": chunk_count,
         "documents": [path.name for path in files],
+        "llm_provider": provider if args.mode == "full" else "",
         "embedding_model": DEFAULT_EMBEDDING_MODEL,
-        "generation_model": DEFAULT_GENERATION_MODEL,
-        "judge_model": DEFAULT_GENERATION_MODEL if args.mode == "full" else "",
+        "generation_model": rag.generation_model if args.mode == "full" else "",
+        "judge_model": judge_model,
     }
     if summary["stopped_early"]:
         # Keep the partial results for debugging, but do not overwrite the published scores.

@@ -9,7 +9,9 @@ Flow:
     3. DELETE /indexes/{index_id} when finished (idle indexes also expire automatically)
 
 Environment variables:
-    GEMINI_API_KEY          required for indexing and answering
+    GEMINI_API_KEY          required (embeddings; also answers when LLM_PROVIDER=gemini)
+    GROQ_API_KEY            optional; when set, answers come from an open-source model on Groq
+    LLM_PROVIDER            optional; "groq" or "gemini" to force the answer provider
     DOCUQUERY_API_TOKEN     optional; when set, every request except /health needs header X-API-Key
     DOCUQUERY_INDEX_TTL     seconds an unused index is kept (default 3600)
     DOCUQUERY_MAX_INDEXES   maximum indexes kept in memory (default 20, oldest are dropped first)
@@ -43,6 +45,8 @@ from rag_engine import (
     ChromaIndex,
     GeminiRAG,
     build_chunks,
+    default_model,
+    resolve_llm_provider,
 )
 
 API_VERSION = "1.0.0"
@@ -63,6 +67,8 @@ class HealthResponse(BaseModel):
     status: str = "ok"
     version: str = API_VERSION
     gemini_configured: bool
+    llm_provider: str
+    llm_model: str
     auth_required: bool
     indexes: int
 
@@ -205,10 +211,18 @@ def get_rag() -> GeminiRAG:
     api_key = os.getenv("GEMINI_API_KEY", "")
     if not api_key:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "GEMINI_API_KEY is not configured on the server.")
+    provider = _llm_provider()
+    groq_key = os.getenv("GROQ_API_KEY", "")
+    if provider == "groq" and not groq_key:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "GROQ_API_KEY is not configured on the server.")
     with _rag_lock:
         if _rag is None:
-            _rag = GeminiRAG(api_key=api_key, request_timeout=60)
+            _rag = GeminiRAG(api_key=api_key, request_timeout=60, llm_provider=provider, llm_api_key=groq_key)
         return _rag
+
+
+def _llm_provider() -> str:
+    return resolve_llm_provider(os.getenv("LLM_PROVIDER") or None, os.getenv("GROQ_API_KEY", ""))
 
 
 def require_token(x_api_key: Annotated[str | None, Header()] = None) -> None:
@@ -229,7 +243,8 @@ app = FastAPI(
     version=API_VERSION,
     description=(
         "Upload documents, index them in ChromaDB with Gemini embeddings, and ask questions "
-        "answered only from those documents, with cited sources and similarity scores."
+        "answered only from those documents by an open-source LLM on Groq (or Gemini), "
+        "with cited sources and similarity scores."
     ),
 )
 
@@ -272,6 +287,8 @@ def root() -> RedirectResponse:
 def health() -> HealthResponse:
     return HealthResponse(
         gemini_configured=bool(os.getenv("GEMINI_API_KEY")),
+        llm_provider=_llm_provider(),
+        llm_model=default_model(_llm_provider()),
         auth_required=bool(os.getenv("DOCUQUERY_API_TOKEN")),
         indexes=len(store),
     )

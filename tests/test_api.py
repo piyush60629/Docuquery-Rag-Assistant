@@ -130,3 +130,12 @@ def test_store_expires_and_caps_indexes(client):
     store.ttl_seconds = 0
     assert client.get(f"/indexes/{ids[2]}").status_code == 404
     assert len(store) == 1
+
+
+def test_health_shows_answer_provider(client, monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_x")
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
+    body = client.get("/health").json()
+    assert body["llm_provider"] == "groq" and body["llm_model"] == "llama-3.3-70b-versatile"
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    assert client.get("/health").json()["llm_provider"] == "gemini"

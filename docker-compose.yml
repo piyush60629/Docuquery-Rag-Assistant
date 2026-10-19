@@ -1,7 +1,7 @@
 # Start both services:  docker compose up --build
 #   API (FastAPI):   http://localhost:8000/docs
 #   UI  (Streamlit): http://localhost:8501
-# Put GEMINI_API_KEY (and optionally DOCUQUERY_API_TOKEN) in a .env file next to this one.
+# Put GEMINI_API_KEY and GROQ_API_KEY (optionally DOCUQUERY_API_TOKEN) in a .env file next to this one.
 
 services:
   api:
@@ -11,6 +11,8 @@ services:
       - "8000:8000"
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-}
       DOCUQUERY_API_TOKEN: ${DOCUQUERY_API_TOKEN:-}
       DOCUQUERY_INDEX_TTL: ${DOCUQUERY_INDEX_TTL:-3600}
     restart: unless-stopped
@@ -24,6 +26,8 @@ services:
       - "8501:8501"
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-}
       APP_PASSWORD: ${APP_PASSWORD:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=3)"]

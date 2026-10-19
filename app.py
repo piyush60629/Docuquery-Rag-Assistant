@@ -9,7 +9,7 @@ from pathlib import Path
 import streamlit as st
 
 from document_loader import UnsupportedFileTypeError, load_many, open_paths, supported_files_in
-from rag_engine import GeminiRAG, build_chunks
+from rag_engine import GeminiRAG, build_chunks, default_model, resolve_llm_provider
 
 
 APP_TITLE = "DocuQuery RAG Assistant"
@@ -63,12 +63,22 @@ def calculate_file_signature(files: list) -> str:
     return digest.hexdigest()
 
 
-def get_rag(api_key: str) -> GeminiRAG:
-    """Reuse one RAG service (LangChain Gemini clients) per session and API key."""
+def get_llm_settings() -> tuple[str, str]:
+    """Answers use Groq (open-source models) when GROQ_API_KEY is set, otherwise Gemini.
+    LLM_PROVIDER = "gemini" or "groq" in secrets forces one of them."""
 
-    key_hash = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    groq_key = secret_value("GROQ_API_KEY")
+    provider = resolve_llm_provider(secret_value("LLM_PROVIDER") or None, groq_key)
+    return provider, groq_key
+
+
+def get_rag(api_key: str) -> GeminiRAG:
+    """Reuse one RAG service (LangChain clients) per session, provider and API keys."""
+
+    provider, groq_key = get_llm_settings()
+    key_hash = hashlib.sha256(f"{provider}|{api_key}|{groq_key}".encode("utf-8")).hexdigest()
     if st.session_state.get("rag_key_hash") != key_hash:
-        st.session_state.rag = GeminiRAG(api_key=api_key)
+        st.session_state.rag = GeminiRAG(api_key=api_key, llm_provider=provider, llm_api_key=groq_key)
         st.session_state.rag_key_hash = key_hash
     return st.session_state.rag
 
@@ -91,7 +101,12 @@ def app_header() -> None:
 def sidebar(api_key_ready: bool) -> tuple[str, int, int, int]:
     with st.sidebar:
         st.header("Project controls")
-        st.success("Gemini API connected" if api_key_ready else "Add a Gemini API key")
+        if api_key_ready:
+            provider, _ = get_llm_settings()
+            model = default_model(provider)
+            st.success(f"Search: Gemini embeddings  \nAnswers: {model} via {provider.title()}")
+        else:
+            st.warning("Add a Gemini API key")
         chunking_label = st.radio(
             "Chunking strategy",
             ["By section (recommended)", "Fixed size"],
@@ -109,10 +124,11 @@ def sidebar(api_key_ready: bool) -> tuple[str, int, int, int]:
             "3. Create Gemini embeddings\n"
             "4. Store vectors in ChromaDB\n"
             "5. Retrieve similar chunks (cosine similarity)\n"
-            "6. Generate a grounded answer (LangChain chain)"
+            "6. Generate a grounded answer (LangChain chain; Llama 3.3 via Groq or Gemini)"
         )
         st.warning(
-            "Use only non-confidential demo files. Relevant document text is sent to the Gemini API."
+            "Use only non-confidential demo files. Document text is sent to the Gemini API (search) "
+            "and to the answer model's provider."
         )
         if st.button("Clear documents and chat", use_container_width=True):
             reset_index()

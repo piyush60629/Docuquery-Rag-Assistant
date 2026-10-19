@@ -2,7 +2,8 @@
 
 Pipeline:
     DocumentPart -> section-aware chunking (headings + LangChain RecursiveCharacterTextSplitter)
-    -> Gemini embeddings -> ChromaDB vector store -> similarity search -> LangChain (LCEL) answer chain
+    -> Gemini embeddings -> ChromaDB vector store -> similarity search
+    -> LangChain (LCEL) answer chain on an open-source LLM via Groq (default) or Gemini
 """
 
 from __future__ import annotations
@@ -28,6 +29,12 @@ from document_loader import DocumentPart
 
 DEFAULT_GENERATION_MODEL = "gemini-3.5-flash"
 DEFAULT_EMBEDDING_MODEL = "gemini-embedding-001"
+
+# Answers can come from Groq (open-source models, generous free tier) or Gemini.
+# Embeddings always use Gemini, so retrieval results stay comparable.
+LLM_PROVIDERS = ("groq", "gemini")
+DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_GROQ_JUDGE_MODEL = "openai/gpt-oss-120b"
 EMBEDDING_DIMENSIONS = 768
 
 COLLECTION_PREFIX = "docuquery-"
@@ -353,6 +360,67 @@ class ChromaIndex:
 
 
 # --------------------------------------------------------------------------- #
+# Chat models
+# --------------------------------------------------------------------------- #
+
+
+def default_model(provider: str) -> str:
+    return DEFAULT_GROQ_MODEL if provider == "groq" else DEFAULT_GENERATION_MODEL
+
+
+def resolve_llm_provider(explicit: str | None = None, groq_api_key: str = "") -> str:
+    """Use the provider that was asked for; otherwise Groq when its key is set, else Gemini."""
+
+    if explicit:
+        provider = explicit.strip().lower()
+        if provider not in LLM_PROVIDERS:
+            raise ValueError(f"LLM provider must be one of {LLM_PROVIDERS}")
+        return provider
+    return "groq" if groq_api_key else "gemini"
+
+
+def make_chat_model(
+    provider: str,
+    api_key: str,
+    model: str | None = None,
+    *,
+    max_tokens: int = 700,
+    temperature: float | None = None,
+    max_retries: int = 6,
+    timeout: float | None = None,
+) -> BaseChatModel:
+    """Create a LangChain chat model for Groq or Gemini with the same settings."""
+
+    if not api_key:
+        raise ValueError(f"A {provider.title()} API key is required")
+    model = model or default_model(provider)
+    if provider == "groq":
+        from langchain_groq import ChatGroq
+
+        options: dict[str, Any] = {}
+        if model.startswith("openai/gpt-oss"):
+            options["reasoning_effort"] = "low"  # reasoning models: keep thinking short and cheap
+        if temperature is not None:
+            options["temperature"] = temperature
+        return ChatGroq(
+            model=model, api_key=api_key, max_tokens=max_tokens, max_retries=max_retries, timeout=timeout, **options
+        )
+    if provider == "gemini":
+        from langchain_google_genai import ChatGoogleGenerativeAI
+
+        options = {"temperature": temperature} if temperature is not None else {}
+        return ChatGoogleGenerativeAI(
+            model=model,
+            google_api_key=api_key,
+            max_output_tokens=max_tokens,
+            max_retries=max_retries,
+            timeout=timeout,
+            **options,
+        )
+    raise ValueError(f"LLM provider must be one of {LLM_PROVIDERS}")
+
+
+# --------------------------------------------------------------------------- #
 # Retrieval + generation
 # --------------------------------------------------------------------------- #
 
@@ -381,35 +449,42 @@ def format_context(results: Sequence[SearchResult]) -> str:
 class GeminiRAG:
     """RAG service: Gemini embeddings + ChromaDB retrieval + a LangChain answer chain.
 
-    `embeddings` and `llm` can be injected (for tests or other providers); otherwise
-    Gemini models are created from the API key.
+    `api_key` is the Gemini key (embeddings, and answers when llm_provider="gemini").
+    With llm_provider="groq", answers come from an open-source model on Groq using
+    `llm_api_key`. `embeddings` and `llm` can be injected for tests.
     """
 
     def __init__(
         self,
         api_key: str = "",
-        generation_model: str = DEFAULT_GENERATION_MODEL,
+        generation_model: str | None = None,
         embedding_model: str = DEFAULT_EMBEDDING_MODEL,
         embeddings: Embeddings | None = None,
         llm: BaseChatModel | None = None,
         max_retries: int = 6,
         request_timeout: float | None = None,
+        llm_provider: str = "gemini",
+        llm_api_key: str = "",
     ) -> None:
-        if (embeddings is None or llm is None) and not api_key:
-            raise ValueError("A Gemini API key is required")
+        self.llm_provider = resolve_llm_provider(llm_provider)
+        self.generation_model = generation_model or default_model(self.llm_provider)
 
-        if embeddings is None or llm is None:
-            from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+        if embeddings is None:
+            if not api_key:
+                raise ValueError("A Gemini API key is required")
+            from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-        self.embeddings = embeddings or GoogleGenerativeAIEmbeddings(
-            model=embedding_model,
-            google_api_key=api_key,
-            output_dimensionality=EMBEDDING_DIMENSIONS,
-        )
-        self.llm = llm or ChatGoogleGenerativeAI(
-            model=generation_model,
-            google_api_key=api_key,
-            max_output_tokens=700,
+            embeddings = GoogleGenerativeAIEmbeddings(
+                model=embedding_model,
+                google_api_key=api_key,
+                output_dimensionality=EMBEDDING_DIMENSIONS,
+            )
+        self.embeddings = embeddings
+        self.llm = llm or make_chat_model(
+            self.llm_provider,
+            llm_api_key if self.llm_provider == "groq" else api_key,
+            self.generation_model,
+            max_tokens=700,
             max_retries=max_retries,
             timeout=request_timeout,
         )
