@@ -145,10 +145,20 @@ def _snap_score(value: Any) -> float:
 def parse_judge_response(text: str) -> dict[str, Any]:
     """Extract the judge's JSON, tolerating code fences or extra text around it."""
 
-    match = re.search(r"\{.*\}", text or "", flags=re.DOTALL)
-    if not match:
-        raise ValueError(f"Judge did not return JSON: {text!r}")
-    data = json.loads(match.group(0))
+    # Take the last JSON object that contains the scores. Reasoning models may write
+    # other text (even other braces) before the final answer.
+    decoder = json.JSONDecoder()
+    data = None
+    text = text or ""
+    for start in [m.start() for m in re.finditer(r"\{", text)]:
+        try:
+            candidate, _ = decoder.raw_decode(text, start)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(candidate, dict) and "faithfulness" in candidate:
+            data = candidate
+    if data is None:
+        raise ValueError(f"Judge did not return JSON: {text[:200]!r}")
     return {
         "faithfulness": _snap_score(data.get("faithfulness")),
         "correctness": _snap_score(data.get("correctness")),
@@ -236,7 +246,14 @@ def render_markdown(summary: dict[str, Any], results: Sequence[CaseResult], conf
         "",
         f"- Run: {config.get('timestamp', '')}  ",
         f"- Mode: {config['mode']} · chunking {config.get('chunking', 'fixed')} · chunk size {config['chunk_size']} · overlap {config['overlap']} · top-k {top_k}  ",
-        f"- Models: embeddings `{config.get('embedding_model', '')}`, answers `{config.get('generation_model', '')}`, judge `{config.get('judge_model', '')}`  ",
+        f"- Models: embeddings `{config.get('embedding_model', '')}`"
+        + (
+            f", answers `{config.get('generation_model', '')}`, judge `{config.get('judge_model', '')}`"
+            f" (via {config.get('llm_provider', '')})"
+            if config.get("judge_model")
+            else ""
+        )
+        + "  ",
         f"- Questions: {summary['cases']} ({summary['answerable_cases']} answerable, "
         f"{summary['unanswerable_cases']} unanswerable) · chunks indexed: {config.get('chunks', '')} · errors: {summary['errors']}",
         "",

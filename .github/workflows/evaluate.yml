@@ -1,7 +1,9 @@
 name: Evaluate RAG
 
 # Run manually from the Actions tab: Evaluate RAG -> Run workflow.
-# Needs a repository secret named GEMINI_API_KEY (Settings -> Secrets and variables -> Actions).
+# Needs repository secrets (Settings -> Secrets and variables -> Actions):
+#   GEMINI_API_KEY  embeddings (always)
+#   GROQ_API_KEY    answers and grading in full mode with llm_provider=groq
 
 on:
   workflow_dispatch:
@@ -11,6 +13,11 @@ on:
         type: choice
         options: [retrieval, full]
         default: retrieval
+      llm_provider:
+        description: "Who writes and grades answers in full mode: groq (open-source models, free tier) or gemini"
+        type: choice
+        options: [groq, gemini]
+        default: groq
       chunking:
         description: "sections = split on headings first (default), fixed = size only (original)"
         type: choice
@@ -61,6 +68,8 @@ jobs:
         env:
           PYTHONUNBUFFERED: "1"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          LLM_PROVIDER: ${{ inputs.llm_provider }}
           MODE: ${{ inputs.mode }}
           CHUNKING: ${{ inputs.chunking }}
           CHUNK_SIZE: ${{ inputs.chunk_size }}
@@ -72,9 +81,13 @@ jobs:
             echo "::error::Add a repository secret named GEMINI_API_KEY first (Settings -> Secrets and variables -> Actions)."
             exit 1
           fi
+          if [ "$MODE" = "full" ] && [ "$LLM_PROVIDER" = "groq" ] && [ -z "$GROQ_API_KEY" ]; then
+            echo "::error::Add a repository secret named GROQ_API_KEY first, or run with llm_provider = gemini."
+            exit 1
+          fi
           set -o pipefail
-          if ! python evaluate.py --mode "$MODE" --chunking "$CHUNKING" --chunk-size "$CHUNK_SIZE" --overlap "$OVERLAP" --top-k "$TOP_K" --label "$LABEL" --update-readme 2>&1 | tee eval-output.log; then
-            reason=$(grep -E "Stopped after|could not start|Gemini|Error" eval-output.log | tail -2 | tr '\n' ' ')
+          if ! python evaluate.py --mode "$MODE" --llm-provider "$LLM_PROVIDER" --chunking "$CHUNKING" --chunk-size "$CHUNK_SIZE" --overlap "$OVERLAP" --top-k "$TOP_K" --label "$LABEL" --update-readme 2>&1 | tee eval-output.log; then
+            reason=$( (grep -E "^\[[0-9]+/[0-9]+\] .*: ERROR" eval-output.log | tail -1; grep -E "Stopped after|could not start|Set GROQ" eval-output.log | tail -1) | tr '\n' ' ' | cut -c1-700)
             echo "::error title=Evaluation failed::${reason:-See the Run evaluation log for details.}"
             exit 1
           fi

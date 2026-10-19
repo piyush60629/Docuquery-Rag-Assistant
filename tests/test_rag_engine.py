@@ -207,3 +207,43 @@ def test_docx_headings_become_markdown_sections():
     parts = extract_docx(buffer.getvalue(), "guide.docx")
     assert parts[0].text.startswith("# Onboarding Guide\n\nWelcome")
     assert [h for h, _ in split_sections(parts[0].text)] == ["Onboarding Guide", "Onboarding Guide > Access"]
+
+
+def test_llm_provider_resolution():
+    from rag_engine import resolve_llm_provider
+
+    assert resolve_llm_provider(None, groq_api_key="") == "gemini"
+    assert resolve_llm_provider(None, groq_api_key="gsk_x") == "groq"
+    assert resolve_llm_provider("Gemini", groq_api_key="gsk_x") == "gemini"
+    with pytest.raises(ValueError):
+        resolve_llm_provider("openai")
+
+
+def test_groq_and_gemini_chat_models_are_built_with_the_same_settings():
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_groq import ChatGroq
+
+    from rag_engine import DEFAULT_GROQ_MODEL, make_chat_model
+
+    groq_rag = GeminiRAG(api_key="gemini-key", llm_provider="groq", llm_api_key="groq-key", max_retries=0, request_timeout=60)
+    assert isinstance(groq_rag.llm, ChatGroq)
+    assert groq_rag.llm.model_name == DEFAULT_GROQ_MODEL == groq_rag.generation_model
+    assert groq_rag.llm.max_retries == 0 and groq_rag.llm.request_timeout == 60
+
+    assert isinstance(GeminiRAG(api_key="gemini-key").llm, ChatGoogleGenerativeAI)
+    judge = make_chat_model("groq", "groq-key", "openai/gpt-oss-120b", temperature=0)
+    assert judge.reasoning_effort == "low"
+
+
+def test_groq_provider_needs_its_own_key():
+    with pytest.raises(ValueError, match="Groq"):
+        GeminiRAG(api_key="gemini-key", llm_provider="groq", llm_api_key="")
+
+
+def test_reasoning_models_get_headroom_and_hidden_thinking():
+    from rag_engine import REASONING_TOKEN_HEADROOM, make_chat_model
+
+    answer = make_chat_model("groq", "k", "openai/gpt-oss-120b", max_tokens=700)
+    judge = make_chat_model("groq", "k", "qwen/qwen3.8-27b", max_tokens=300)
+    assert answer.max_tokens == 700 + REASONING_TOKEN_HEADROOM and answer.reasoning_effort == "low"
+    assert judge.reasoning_format == "hidden" and judge.max_tokens == 300 + REASONING_TOKEN_HEADROOM

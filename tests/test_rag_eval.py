@@ -234,3 +234,18 @@ def test_history_file_is_upgraded_when_columns_change(tmp_path):
     rows = list(csv.DictReader(old.open()))
     assert list(rows[0].keys()) == HISTORY_FIELDS
     assert [(r["label"], r["chunking"], r["hit_at_1"]) for r in rows] == [("baseline", "fixed", "0.8"), ("new", "sections", "1.0")]
+
+
+def test_judge_parser_takes_the_scores_object_after_reasoning_text():
+    text = 'Thinking: the context {mentions retries}. Draft {"x": 1}.\nFinal: {"faithfulness": 1, "correctness": 0.5, "reason": "partly"}'
+    assert parse_judge_response(text) == {"faithfulness": 1.0, "correctness": 0.5, "reason": "partly"}
+
+
+def test_groq_style_errors_get_plain_english_hints():
+    from evaluate import explain_error, is_daily_quota_error
+
+    per_day = "Error code: 429 - {'error': {'message': 'Rate limit reached for model llama-3.3-70b-versatile on tokens per day (TPD): Limit 100000'}}"
+    per_minute = "Error code: 429 - {'error': {'message': 'Rate limit reached for model llama-3.3-70b-versatile on tokens per minute (TPM)'}}"
+    assert is_daily_quota_error(per_day) and "daily quota" in explain_error(per_day)
+    assert not is_daily_quota_error(per_minute) and "rate limiting" in explain_error(per_minute)
+    assert "rejected" in explain_error("Error code: 401 - {'error': {'message': 'Invalid API Key'}}")
