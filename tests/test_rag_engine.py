@@ -238,3 +238,12 @@ def test_groq_and_gemini_chat_models_are_built_with_the_same_settings():
 def test_groq_provider_needs_its_own_key():
     with pytest.raises(ValueError, match="Groq"):
         GeminiRAG(api_key="gemini-key", llm_provider="groq", llm_api_key="")
+
+
+def test_reasoning_models_get_headroom_and_hidden_thinking():
+    from rag_engine import REASONING_TOKEN_HEADROOM, make_chat_model
+
+    answer = make_chat_model("groq", "k", "openai/gpt-oss-120b", max_tokens=700)
+    judge = make_chat_model("groq", "k", "qwen/qwen3.8-27b", max_tokens=300)
+    assert answer.max_tokens == 700 + REASONING_TOKEN_HEADROOM and answer.reasoning_effort == "low"
+    assert judge.reasoning_format == "hidden" and judge.max_tokens == 300 + REASONING_TOKEN_HEADROOM

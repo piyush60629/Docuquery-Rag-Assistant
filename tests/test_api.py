@@ -136,6 +136,6 @@ def test_health_shows_answer_provider(client, monkeypatch):
     monkeypatch.setenv("GROQ_API_KEY", "gsk_x")
     monkeypatch.delenv("LLM_PROVIDER", raising=False)
     body = client.get("/health").json()
-    assert body["llm_provider"] == "groq" and body["llm_model"] == "llama-3.3-70b-versatile"
+    assert body["llm_provider"] == "groq" and body["llm_model"] == "openai/gpt-oss-120b"
     monkeypatch.setenv("LLM_PROVIDER", "gemini")
     assert client.get("/health").json()["llm_provider"] == "gemini"

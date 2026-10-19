@@ -328,7 +328,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             llm_key,
             judge_model,
             temperature=0,
-            max_tokens=1024 if provider == "groq" else 300,
+            max_tokens=300,
             max_retries=0,
             timeout=60,
         )

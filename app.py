@@ -124,7 +124,7 @@ def sidebar(api_key_ready: bool) -> tuple[str, int, int, int]:
             "3. Create Gemini embeddings\n"
             "4. Store vectors in ChromaDB\n"
             "5. Retrieve similar chunks (cosine similarity)\n"
-            "6. Generate a grounded answer (LangChain chain; Llama 3.3 via Groq or Gemini)"
+            "6. Generate a grounded answer (LangChain chain; gpt-oss-120b via Groq, or Gemini)"
         )
         st.warning(
             "Use only non-confidential demo files. Document text is sent to the Gemini API (search) "

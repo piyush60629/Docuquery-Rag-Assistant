@@ -87,7 +87,7 @@ jobs:
           fi
           set -o pipefail
           if ! python evaluate.py --mode "$MODE" --llm-provider "$LLM_PROVIDER" --chunking "$CHUNKING" --chunk-size "$CHUNK_SIZE" --overlap "$OVERLAP" --top-k "$TOP_K" --label "$LABEL" --update-readme 2>&1 | tee eval-output.log; then
-            reason=$(grep -E "Stopped after|could not start|Set GROQ|Error" eval-output.log | tail -2 | tr '\n' ' ')
+            reason=$( (grep -E "^\[[0-9]+/[0-9]+\] .*: ERROR" eval-output.log | tail -1; grep -E "Stopped after|could not start|Set GROQ" eval-output.log | tail -1) | tr '\n' ' ' | cut -c1-700)
             echo "::error title=Evaluation failed::${reason:-See the Run evaluation log for details.}"
             exit 1
           fi

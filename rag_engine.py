@@ -3,7 +3,7 @@
 Pipeline:
     DocumentPart -> section-aware chunking (headings + LangChain RecursiveCharacterTextSplitter)
     -> Gemini embeddings -> ChromaDB vector store -> similarity search
-    -> LangChain (LCEL) answer chain on an open-source LLM via Groq (default) or Gemini
+    -> LangChain (LCEL) answer chain on an open-weight LLM (gpt-oss-120b) via Groq, or Gemini
 """
 
 from __future__ import annotations
@@ -33,8 +33,10 @@ DEFAULT_EMBEDDING_MODEL = "gemini-embedding-001"
 # Answers can come from Groq (open-source models, generous free tier) or Gemini.
 # Embeddings always use Gemini, so retrieval results stay comparable.
 LLM_PROVIDERS = ("groq", "gemini")
-DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
-DEFAULT_GROQ_JUDGE_MODEL = "openai/gpt-oss-120b"
+# Groq retires models regularly; see https://console.groq.com/docs/deprecations
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"  # OpenAI's open-weight model
+DEFAULT_GROQ_JUDGE_MODEL = "qwen/qwen3.8-27b"  # a different model family grades the answers
+REASONING_TOKEN_HEADROOM = 800  # reasoning models spend some output tokens thinking first
 EMBEDDING_DIMENSIONS = 768
 
 COLLECTION_PREFIX = "docuquery-"
@@ -399,7 +401,11 @@ def make_chat_model(
 
         options: dict[str, Any] = {}
         if model.startswith("openai/gpt-oss"):
-            options["reasoning_effort"] = "low"  # reasoning models: keep thinking short and cheap
+            options["reasoning_effort"] = "low"  # keep thinking short; reasoning goes to a separate field
+            max_tokens += REASONING_TOKEN_HEADROOM
+        elif model.startswith("qwen/"):
+            options["reasoning_format"] = "hidden"  # return only the final answer, no <think> text
+            max_tokens += REASONING_TOKEN_HEADROOM
         if temperature is not None:
             options["temperature"] = temperature
         return ChatGroq(
