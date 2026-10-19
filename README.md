@@ -12,7 +12,9 @@ A deployable Retrieval-Augmented Generation (RAG) project built with **LangChain
 - Source passage display with similarity scores
 - Per-session isolation: every user session gets its own ChromaDB collection
 - **RAG evaluation**: retrieval Hit@k and MRR, LLM-as-judge faithfulness and correctness, and refusal accuracy on unanswerable questions
-- Streamlit deployment, secrets handling, and GitHub Actions for tests and evaluation
+- **REST API with FastAPI**: upload documents, query them, and get cited sources as JSON, with interactive OpenAPI docs, request validation, optional API-key auth, and automatic index expiry
+- **Docker**: one image runs the API or the Streamlit UI; `docker compose up` starts both
+- Streamlit deployment, secrets handling, and GitHub Actions for tests, Docker build checks, and evaluation
 
 ## Architecture
 
@@ -44,6 +46,40 @@ Grounded answer + cited source passages
 - **Source control:** GitHub free account
 
 Free tiers have usage limits and can change. This project is intended for learning and portfolio demonstrations, not production workloads.
+
+## REST API
+
+The same RAG pipeline is available as a FastAPI service (`api.py`).
+
+| Method | Endpoint | What it does |
+|---|---|---|
+| GET | `/health` | Service status and configuration |
+| POST | `/indexes` | Upload up to 5 files (PDF, DOCX, TXT, MD) and build an index; returns an `index_id` |
+| POST | `/indexes/demo` | Index the included demo documents |
+| GET | `/indexes/{index_id}` | Index details (documents, chunk count, settings) |
+| POST | `/indexes/{index_id}/query` | Ask a question; returns the answer, cited sources with sections and similarity scores, and timings |
+| DELETE | `/indexes/{index_id}` | Delete an index and free its ChromaDB collection |
+
+Interactive docs: `http://localhost:8000/docs`. When `DOCUQUERY_API_TOKEN` is set, every endpoint except `/health` requires an `X-API-Key` header.
+
+```bash
+uvicorn api:app --reload                     # start the API locally
+
+curl -X POST localhost:8000/indexes/demo     # -> {"index_id": "...", "chunks": 30, ...}
+curl -X POST localhost:8000/indexes/<index_id>/query \
+     -H "Content-Type: application/json" \
+     -d '{"question": "What happens when a pipeline activity fails?", "top_k": 4}'
+curl -X POST localhost:8000/indexes -F "files=@my_doc.pdf" -F "chunking=sections"
+```
+
+## Run with Docker
+
+```bash
+cp .env.example .env          # then put your GEMINI_API_KEY in .env
+docker compose up --build     # API on http://localhost:8000/docs, UI on http://localhost:8501
+```
+
+The image runs as a non-root user, has a health check, and is built and smoke-tested in CI on every push.
 
 ## Run locally
 

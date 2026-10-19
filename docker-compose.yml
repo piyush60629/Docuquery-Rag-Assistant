@@ -1,0 +1,33 @@
+# Start both services:  docker compose up --build
+#   API (FastAPI):   http://localhost:8000/docs
+#   UI  (Streamlit): http://localhost:8501
+# Put GEMINI_API_KEY (and optionally DOCUQUERY_API_TOKEN) in a .env file next to this one.
+
+services:
+  api:
+    build: .
+    image: docuquery-rag:latest
+    ports:
+      - "8000:8000"
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env}
+      DOCUQUERY_API_TOKEN: ${DOCUQUERY_API_TOKEN:-}
+      DOCUQUERY_INDEX_TTL: ${DOCUQUERY_INDEX_TTL:-3600}
+    restart: unless-stopped
+
+  ui:
+    image: docuquery-rag:latest
+    depends_on:
+      - api
+    command: ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]
+    ports:
+      - "8501:8501"
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env}
+      APP_PASSWORD: ${APP_PASSWORD:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+    restart: unless-stopped
