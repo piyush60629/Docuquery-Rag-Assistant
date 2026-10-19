@@ -1,8 +1,8 @@
 {
   "config": {
-    "timestamp": "2026-10-17 14:25 UTC",
-    "label": "section-chunking",
-    "mode": "retrieval",
+    "timestamp": "2026-10-19 10:30 UTC",
+    "label": "full-groq",
+    "mode": "full",
     "chunking": "sections",
     "chunk_size": 900,
     "overlap": 150,
@@ -14,9 +14,10 @@
       "onboarding_faq.md",
       "retail_pipeline_runbook.txt"
     ],
+    "llm_provider": "groq",
     "embedding_model": "gemini-embedding-001",
-    "generation_model": "gemini-3.5-flash",
-    "judge_model": ""
+    "generation_model": "openai/gpt-oss-120b",
+    "judge_model": "qwen/qwen3.8-27b"
   },
   "summary": {
     "cases": 35,
@@ -26,9 +27,13 @@
     "hit_at_1": 0.9667,
     "hit_at_4": 1.0,
     "mrr": 0.9833,
+    "faithfulness": 1.0,
+    "answer_correctness": 0.9833,
+    "refusal_accuracy": 1.0,
+    "false_refusal_rate": 0.0,
     "planned_cases": 35,
     "stopped_early": null,
-    "duration_seconds": 5.7
+    "duration_seconds": 416.8
   },
   "results": [
     {
@@ -43,11 +48,11 @@
         "incident_history.md #10"
       ],
       "top_score": 0.7425,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "Azure Data Factory starts the ingestion workflow at **2:15\u202fAM** each day\u3010Source\u202f1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly identifies the start time as 2:15 AM, which is explicitly stated in the retrieved context and matches the reference answer.",
       "error": null
     },
     {
@@ -62,11 +67,11 @@
         "retail_pipeline_runbook.txt #29"
       ],
       "top_score": 0.709,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "When a source file arrives with an unexpected schema, the Bronze layer\u2019s ingestion process moves that file to a quarantine folder for later review.\u202fThis allows the team to investigate the schema mismatch before deciding how to handle the file\u3010Source\u202f2\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly states that files with unexpected schemas are moved to a quarantine folder for review, which is fully supported by Source 2 and matches the reference answer.",
       "error": null
     },
     {
@@ -81,11 +86,11 @@
         "retail_pipeline_runbook.txt #24"
       ],
       "top_score": 0.8188,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "Invalid sales records in the Silver layer are written to an error table with the rejection reason. \u3010Source\u202f1\u3011",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the retrieved context and matches the reference answer regarding the destination of invalid records.",
       "error": null
     },
     {
@@ -100,11 +105,11 @@
         "retail_pipeline_runbook.txt #23"
       ],
       "top_score": 0.789,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The incremental\u2011load watermark is refreshed **only after the entire batch completes successfully**. If the batch fails, the watermark is left unchanged so the same data can be re\u2011processed on the next run.\u202f[Source\u202f1]",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the retrieved context and matches the reference answer regarding the watermark update condition.",
       "error": null
     },
     {
@@ -119,11 +124,11 @@
         "retail_pipeline_runbook.txt #28"
       ],
       "top_score": 0.6955,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The main fact table stores the following measures:\n\n- Sales quantity  \n- Gross amount  \n- Discount amount  \n- Net sales amount  \n\nThese are listed in the Gold layer description of the pipeline runbook\u3010Source 1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly lists all four measures found in the retrieved context and matches the reference answer exactly.",
       "error": null
     },
     {
@@ -138,11 +143,11 @@
         "data_quality_standards.md #7"
       ],
       "top_score": 0.7074,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "Approved changes are first committed to Git and go through a pull\u2011request review. Once the change is approved, it is deployed to production by the Azure\u202fDevOps deployment pipeline\u2014the only mechanism that can modify the production environment\u3010Source\u202f1\u3011. Additionally, the onboarding FAQ notes that \u201cOnly the deployment pipeline in Azure DevOps can change production\u201d\u3010Source\u202f2\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the retrieved context regarding Git commits, PR reviews, and Azure DevOps deployment, matching the reference answer's core information.",
       "error": null
     },
     {
@@ -157,11 +162,11 @@
         "incident_history.md #10"
       ],
       "top_score": 0.7523,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "When an activity fails, the support engineer\u202freviews the failed step, validates the source file and its connection, fixes the issue in the development environment, and then reruns the failed batch after obtaining approval\u3010Source\u202f1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the steps described in Source 1 and matches the reference answer.",
       "error": null
     },
     {
@@ -176,11 +181,11 @@
         "data_quality_standards.md #2"
       ],
       "top_score": 0.7895,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "Each record stored in the Bronze layer is enriched with three pieces of metadata:\n\n* an ingestion timestamp,  \n* the source file name, and  \n* a batch identifier.  \n\nThese fields are added when the data is initially loaded into the Bronze layer\u3010Source 1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly identifies the three specific metadata fields mentioned in the retrieved context and matches the reference answer exactly.",
       "error": null
     },
     {
@@ -195,11 +200,11 @@
         "incident_history.md #13"
       ],
       "top_score": 0.7266,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "Optional columns may have a null rate of up to\u202f2\u202fpercent before a Warning is raised. \u3010Source 1\u3011",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly identifies the 2 percent threshold for optional columns as stated in the retrieved context, matching the reference answer.",
       "error": null
     },
     {
@@ -214,11 +219,11 @@
         "data_quality_standards.md #1"
       ],
       "top_score": 0.7556,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "When a **Critical** data quality rule fails, the batch is stopped and the Gold layer is not refreshed. This prevents downstream processing from using potentially corrupted data.\u3010Source 1\u3011",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly identifies that the batch is stopped and the Gold layer is not refreshed, matching the reference and supported by Source 1.",
       "error": null
     },
     {
@@ -233,11 +238,11 @@
         "retail_pipeline_runbook.txt #25"
       ],
       "top_score": 0.7568,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "A sales record that contains a product identifier not found in the current product dimension is assigned the placeholder product key **\u20111** and is flagged for the product data steward to review\u3010Source\u202f1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the retrieved context and matches the reference answer regarding the assignment of placeholder key -1 and flagging for the data steward.",
       "error": null
     },
     {
@@ -252,11 +257,11 @@
         "retail_pipeline_runbook.txt #23"
       ],
       "top_score": 0.6585,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "Sales records that arrive more than\u202f7\u202fdays late are loaded into a separate **late\u2011arrivals table** instead of the main fact table. \u3010Source\u202f1\u3011",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the information in Source 1 and matches the reference answer exactly.",
       "error": null
     },
     {
@@ -271,11 +276,11 @@
         "retail_pipeline_runbook.txt #25"
       ],
       "top_score": 0.7261,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The allowed row\u2011count variance between consecutive pipeline stages is **0.5\u202fpercent**\u202f[Source\u202f1].",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 0.5,
+      "judge_reason": "The answer correctly identifies the 0.5 percent threshold but omits the important exception for records rejected by validation rules mentioned in the reference and context.",
       "error": null
     },
     {
@@ -290,11 +295,11 @@
         "retail_pipeline_runbook.txt #25"
       ],
       "top_score": 0.6867,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The **finance analyst** is responsible for approving any manual adjustment to net sales amounts\u3010Source\u202f1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly identifies the finance analyst as the approver, which is explicitly supported by Source 1 and matches the reference answer.",
       "error": null
     },
     {
@@ -309,11 +314,11 @@
         "data_quality_standards.md #3"
       ],
       "top_score": 0.7689,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The data quality dashboard refreshes each morning at **7:00\u202fAM**\u3010Source\u202f1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly states the refresh time as 7:00 AM, which is fully supported by Source 1 and matches the reference answer.",
       "error": null
     },
     {
@@ -328,11 +333,11 @@
         "data_quality_standards.md #4"
       ],
       "top_score": 0.7256,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "A duplicate sales record is defined as **two records that share the same transaction identifier and line number**\u3010Source\u202f1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the definition provided in Source 1 and matches the reference answer exactly.",
       "error": null
     },
     {
@@ -347,11 +352,11 @@
         "data_quality_standards.md #7"
       ],
       "top_score": 0.6502,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "A change of more than **30\u202fpercent** in daily sales volume (compared with the average of the same weekday over the previous four weeks) raises a Warning for business review. \u3010Source 1\u3011",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the 30 percent threshold and comparison method specified in the retrieved context and matches the reference answer.",
       "error": null
     },
     {
@@ -366,11 +371,11 @@
         "incident_history.md #13"
       ],
       "top_score": 0.7885,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The linked\u2011service authentication failure was caused because **the storage\u2011account secret stored in Azure Key Vault had expired**\u3010Source\u202f1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly identifies the expired storage account secret in Azure Key Vault as the root cause, which is fully supported by Source 1 and matches the reference answer.",
       "error": null
     },
     {
@@ -385,11 +390,11 @@
         "incident_history.md #14"
       ],
       "top_score": 0.7376,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The incident was resolved by extending the notebook\u2019s execution limit and then re\u2011running the failed batch after it received approval. Specifically, the activity timeout was increased from 60\u202fminutes to 90\u202fminutes, and the batch that had failed because of the timeout was rerun once it was approved\u3010Source 1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the resolution details (timeout increase to 90 minutes and rerun after approval) found in Source 1, matching the reference answer.",
       "error": null
     },
     {
@@ -404,11 +409,11 @@
         "incident_history.md #10"
       ],
       "top_score": 0.7583,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The sales were duplicated because the source team resent the same sales file but gave it a new file name. Since the pipeline was checking only the file name for duplicates, it did not recognize the file as a repeat and loaded its rows a second time, causing the double\u2011count in the Gold layer\u3010Source\u202f1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the root cause described in the retrieved context and matches the reference answer.",
       "error": null
     },
     {
@@ -423,11 +428,11 @@
         "incident_history.md #11"
       ],
       "top_score": 0.7501,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The out\u2011of\u2011memory error occurred because one store had a far larger number of transactions than the others, creating data skew in the join with the product dimension\u3010Source\u202f1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the root cause described in Source 1, matching the reference answer's details about data skew due to transaction volume differences.",
       "error": null
     },
     {
@@ -442,11 +447,11 @@
         "incident_history.md #9"
       ],
       "top_score": 0.756,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The final load into Snowflake stopped because the monthly credit quota on the Snowflake resource monitor had been reached, which caused the warehouse to be suspended\u3010Source\u202f1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the root cause described in the retrieved context and matches the reference answer.",
       "error": null
     },
     {
@@ -461,11 +466,11 @@
         "incident_history.md #14"
       ],
       "top_score": 0.7731,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The schema\u2011drift incident was triggered by the addition of a new column named **region_code** to the source system\u2019s store file. \u3010Source\u202f1\u3011",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly identifies 'region_code' as the new column causing the incident, which is fully supported by Source 1 and matches the reference answer.",
       "error": null
     },
     {
@@ -480,11 +485,11 @@
         "incident_history.md #14"
       ],
       "top_score": 0.6882,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The prevention step added was to configure an expiry alert\u202f30\u202fdays before any Azure Key Vault secret expires. \u3010Source\u202f1\u3011",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the prevention step described in Source 1 and matches the reference answer.",
       "error": null
     },
     {
@@ -499,11 +504,11 @@
         "onboarding_faq.md #19"
       ],
       "top_score": 0.7145,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The Gold tables must be ready by **6:00\u202fAM\u202fIST** each day.\u202f[Source\u202f1]",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly identifies the deadline as 6:00 AM IST, which is explicitly supported by the retrieved context and matches the reference answer.",
       "error": null
     },
     {
@@ -518,11 +523,11 @@
         "incident_history.md #8"
       ],
       "top_score": 0.6944,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "One on\u2011call shift lasts one week, running from Monday\u202f9:00\u202fAM to the following Monday\u202f9:00\u202fAM. \u3010Source\u202f1\u3011",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer accurately reflects the duration and specific times stated in the retrieved context and matches the reference answer.",
       "error": null
     },
     {
@@ -537,11 +542,11 @@
         "onboarding_faq.md #17"
       ],
       "top_score": 0.752,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "The naming convention for Databricks notebooks is to start with the prefix **`nb_`** (e.g., `nb_gold_sales_fact`)\u3010Source 1\u3011.",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly identifies the 'nb_' prefix and provides the exact example found in the retrieved context, matching the reference answer.",
       "error": null
     },
     {
@@ -556,11 +561,11 @@
         "data_quality_standards.md #1"
       ],
       "top_score": 0.7003,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "A new feature branch should be created from\u202fmain using the format:\n\n**`feature/ticket-number-short-description`**  \n\n[Source 1]",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly identifies the branch name format and the base branch (main) as stated in the retrieved context, matching the reference answer.",
       "error": null
     },
     {
@@ -575,11 +580,11 @@
         "onboarding_faq.md #15"
       ],
       "top_score": 0.7218,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "Access to the development environment is typically ready within **two working days** after the request is approved\u202f[Source\u202f1].",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly states the two-working-day timeframe and is fully supported by the retrieved context.",
       "error": null
     },
     {
@@ -594,11 +599,11 @@
         "incident_history.md #14"
       ],
       "top_score": 0.7215,
-      "answer": null,
-      "refused": null,
-      "faithfulness": null,
-      "correctness": null,
-      "judge_reason": null,
+      "answer": "If the pipeline is at risk of missing the\u202f6:00\u202fAM\u202fIST\u202fdeadline for the Gold tables, the on\u2011call engineer must notify the reporting team by\u202f5:30\u202fAM.\u202f[Source\u202f1]",
+      "refused": false,
+      "faithfulness": 1.0,
+      "correctness": 1.0,
+      "judge_reason": "The answer correctly identifies the action (notify reporting team) and the deadline (5:30 AM) as stated in the retrieved context and reference answer.",
       "error": null
     },
     {
@@ -613,8 +618,8 @@
         "retail_pipeline_runbook.txt #27"
       ],
       "top_score": 0.6924,
-      "answer": null,
-      "refused": null,
+      "answer": "I could not find that information in the uploaded documents.",
+      "refused": true,
       "faithfulness": null,
       "correctness": null,
       "judge_reason": null,
@@ -632,8 +637,8 @@
         "retail_pipeline_runbook.txt #30"
       ],
       "top_score": 0.6033,
-      "answer": null,
-      "refused": null,
+      "answer": "I could not find that information in the uploaded documents.",
+      "refused": true,
       "faithfulness": null,
       "correctness": null,
       "judge_reason": null,
@@ -651,8 +656,8 @@
         "incident_history.md #9"
       ],
       "top_score": 0.5996,
-      "answer": null,
-      "refused": null,
+      "answer": "I could not find that information in the uploaded documents.",
+      "refused": true,
       "faithfulness": null,
       "correctness": null,
       "judge_reason": null,
@@ -670,8 +675,8 @@
         "data_quality_standards.md #6"
       ],
       "top_score": 0.6185,
-      "answer": null,
-      "refused": null,
+      "answer": "I could not find that information in the uploaded documents.",
+      "refused": true,
       "faithfulness": null,
       "correctness": null,
       "judge_reason": null,
@@ -689,8 +694,8 @@
         "onboarding_faq.md #15"
       ],
       "top_score": 0.5752,
-      "answer": null,
-      "refused": null,
+      "answer": "I could not find that information in the uploaded documents.",
+      "refused": true,
       "faithfulness": null,
       "correctness": null,
       "judge_reason": null,

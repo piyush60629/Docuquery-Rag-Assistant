@@ -142,9 +142,9 @@ Five of the six baseline misses came from the plain-text runbook, where each fix
 <!-- EVAL_RESULTS_START -->
 **Latest results**
 
-- Run: 2026-10-17 14:25 UTC  
-- Mode: retrieval · chunking sections · chunk size 900 · overlap 150 · top-k 4  
-- Models: embeddings `gemini-embedding-001`, answers `gemini-3.5-flash`, judge ``  
+- Run: 2026-10-19 10:30 UTC  
+- Mode: full · chunking sections · chunk size 900 · overlap 150 · top-k 4  
+- Models: embeddings `gemini-embedding-001`, answers `openai/gpt-oss-120b`, judge `qwen/qwen3.8-27b` (via groq)  
 - Questions: 35 (30 answerable, 5 unanswerable) · chunks indexed: 30 · errors: 0
 
 | Metric | Score |
@@ -152,6 +152,10 @@ Five of the six baseline misses came from the plain-text runbook, where each fix
 | Retrieval Hit@1 | 96.7% |
 | Retrieval Hit@4 | 100.0% |
 | Retrieval MRR | 0.983 |
+| Answer faithfulness | 100.0% |
+| Answer correctness | 98.3% |
+| Refusal accuracy (unanswerable) | 100.0% |
+| False refusal rate (lower is better) | 0.0% |
 
 Full per-question results: `eval/results/latest.md`.
 <!-- EVAL_RESULTS_END -->
