@@ -2,6 +2,12 @@
 
 A deployable Retrieval-Augmented Generation (RAG) project built with **LangChain**, **ChromaDB**, **Gemini embeddings**, and **open-weight LLMs (OpenAI gpt-oss-120b) served by Groq**. Users upload PDF, DOCX, TXT, or Markdown documents and ask questions. The app stores document embeddings in a ChromaDB vector store, retrieves the most relevant chunks, and asks the LLM to answer only from those chunks, with source citations and similarity scores.
 
+**Results:** retrieval Hit@1 96.7% · answer faithfulness 100% · refuses 100% of unanswerable questions (35-question evaluation in CI) · FastAPI + Docker.
+
+![Demo: load documents, ask a question with cited sources, and an unanswerable question is refused](docs/demo.gif)
+
+**🚀 Live demo: [piyush-docuquery.streamlit.app](https://piyush-docuquery.streamlit.app/)**: click **Load included demo documents**, then ask a question.
+
 ## What this project demonstrates
 
 - Document text extraction (PDF, DOCX, TXT, Markdown)
@@ -189,7 +195,6 @@ GROQ_API_KEY = "your_groq_key"
 ```
 
 6. Deploy and choose a simple URL such as `piyush-rag-assistant.streamlit.app` if available.
-7. Add the live URL and GitHub repository to your resume and portfolio.
 
 Never commit API keys to GitHub.
 
@@ -205,17 +210,10 @@ Never commit API keys to GitHub.
 
 Use only public, synthetic, or non-confidential documents. Uploaded content and retrieved passages are sent to the Gemini API for embedding and answer generation. Files are held only in the active Streamlit session by this application, but the external API provider's terms still apply.
 
-## Resume wording after deployment
-
-**DocuQuery – RAG Knowledge Assistant | Python, LangChain, ChromaDB, Gemini API, Streamlit**
-
-- Built and deployed a RAG application that chunks uploaded PDF, DOCX, TXT, and Markdown files with LangChain, stores Gemini embeddings in a ChromaDB vector store, and retrieves relevant passages using cosine similarity search.
-- Generated grounded answers through a LangChain (LCEL) chain that cites source passages and similarity scores to reduce hallucinated responses.
-
 ## Limitations and next improvements
 
 - ChromaDB runs in memory, so each session's index resets when the session ends or the app restarts. Collections from sessions idle for 6+ hours are removed automatically.
 - Scanned PDFs require OCR, which is not included in this version.
-- The evaluation corpus is small (4 documents, about 13 chunks), so Hit@1 and MRR are the most informative retrieval metrics. The judge uses the same Gemini model family as the generator, which can be slightly lenient.
+- The evaluation corpus is small (4 documents, 30 chunks), so Hit@1 and MRR are the most informative retrieval metrics. An LLM judge (Qwen, a different model family from the answer model) can still be slightly lenient.
 - Planned next: hybrid keyword + vector search or a reranker (measured against this evaluation set), chat memory, and an optional local Ollama backend.
 - A production version should add authentication, persistent vector storage, monitoring, and stronger document-access controls.
