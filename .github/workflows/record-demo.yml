@@ -1,0 +1,65 @@
+name: Record demo
+
+# Records docs/demo.gif: load the demo documents, ask a question with cited sources, and
+# ask one the documents cannot answer. Runs when the recorder changes, or from the Actions tab.
+# Needs the repository secrets GEMINI_API_KEY (embeddings) and GROQ_API_KEY (answers).
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/record_demo.py
+      - .github/workflows/record-demo.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: record-demo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install app, Playwright and ffmpeg
+        run: |
+          pip install -r requirements.txt playwright
+          playwright install --with-deps chromium
+          sudo apt-get install -y ffmpeg > /dev/null
+
+      - name: Start the app
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then echo "::error::Add the GEMINI_API_KEY repository secret first."; exit 1; fi
+          nohup streamlit run app.py --server.headless true --client.toolbarMode viewer > streamlit.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:8501 > /dev/null && exit 0; sleep 2; done
+          cat streamlit.log; exit 1
+
+      - name: Record
+        run: python scripts/record_demo.py --out docs/demo.gif
+
+      - name: Commit the GIF
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/demo.gif
+          if git diff --cached --quiet; then echo "No change."; exit 0; fi
+          git commit -m "Update demo GIF"
+          git pull --rebase
+          git push
+
+      - name: Upload app log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamlit-log
+          path: streamlit.log
